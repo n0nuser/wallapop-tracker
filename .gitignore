@@ -1,0 +1,8 @@
+.playwright-mcp/
+__pycache__/
+.venv/
+*.db
+
+# Personal, local-only (your own targets, research and captured data — not part of the app):
+targets.toml
+docs/research/

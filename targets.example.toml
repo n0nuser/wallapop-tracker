@@ -1,0 +1,62 @@
+# Wallapop Tracker — example configuration
+
+Copy this file to `targets.toml` and edit it. Everything the tracker fetches is defined
+here: there are no hardcoded products in the code. Each target is one `[targets.<name>]`
+table; adding a target is a config edit, no code changes.
+
+[defaults]
+# Scraping guardrails: read-only, at least this many seconds between any two calls.
+min_delay_s = 3
+# Origin used to compute each listing's distance.
+lat = 40.4168
+lon = -3.7038
+# Collector caps.
+max_pages_per_query = 5
+max_requests_per_run = 150
+max_detail_checks_per_run = 10
+
+# ---------------------------------------------------------------------------
+# Example target: second-hand bicycles. Bargain = percentile of the group.
+# ---------------------------------------------------------------------------
+[targets.bikes]
+reject_above_eur = 800          # listings above this are never bargains
+lowball_pct = 10                # suggested offer = 10% below the asking price
+# stat = "p25": group listings and mark a bargain when price <= factor * p25 of the group.
+bargain = { stat = "p25", group_by = ["frame", "condition"], min_group_size = 5, factor = 0.85 }
+queries = ["bicicleta carretera", "bicicleta montaña", "bicicleta urbana"]
+
+# Extraction rules: regexes run on lowercased, accent-stripped text.
+[targets.bikes.extract]
+relevant = { include = ["bicicleta", "bici\\b"], exclude = ["casco", "rueda", "sillin"] }
+
+[targets.bikes.extract.fields]
+frame = [
+  ["carbon", "carbono|carbon"],
+  ["alu", "alumini?o"],
+  ["acero", "acero|steel"],
+]
+
+[targets.bikes.extract.numbers]
+size_cm = { patterns = [["(\\d{2})\\s?cm", 1.0]] }
+
+[targets.bikes.extract.derived]
+eur_per_cm = "price / size_cm"
+
+# ---------------------------------------------------------------------------
+# Example target: second-hand appliances. Bargain = fixed cap on a derived value.
+# ---------------------------------------------------------------------------
+[targets.appliances]
+reject_above_eur = 300
+lowball_pct = 15
+# stat names a derived value (see extract.derived): bargain when it is at or below `max`.
+bargain = { stat = "price_per_unit", max = 120 }
+queries = ["lavavajillas", "lavadora", "frigorifico"]
+
+[targets.appliances.extract]
+relevant = { include = ["lavavajillas", "lavadora", "frigorifico", "nevera"], exclude = ["pieza", "repuesto", "motor"] }
+
+[targets.appliances.extract.numbers]
+units = { patterns = [["(\\d)\\s?(?:unidades?|uds?)", 1.0]], default = 1 }
+
+[targets.appliances.extract.derived]
+price_per_unit = "price / units"

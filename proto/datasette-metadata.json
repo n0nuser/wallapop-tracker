@@ -1,0 +1,44 @@
+{
+  "title": "Wallapop dashboard (Datasette prototype — rejected, see ADR 0003)",
+  "databases": {
+    "proto-demo": {
+      "queries": {
+        "everything": {
+          "title": "All listings",
+          "sql": "SELECT target, title, url, price_eur, json_extract(specs,'$.compatible') AS compatible, json_extract(specs,'$.condition') AS condition FROM listing WHERE status='active'"
+        },
+        "by_target": {
+          "title": "By target",
+          "params": ["target"],
+          "sql": "SELECT target, title, url, price_eur, json_extract(specs,'$.compatible') AS compatible FROM listing WHERE status='active' AND target = :target"
+        },
+        "title_search": {
+          "title": "Title search",
+          "params": ["q"],
+          "sql": "SELECT target, title, url, price_eur FROM listing WHERE status='active' AND lower(title) LIKE '%' || lower(:q) || '%'"
+        },
+        "compat_ok": {
+          "title": "Compatible",
+          "sql": "SELECT target, title, url, price_eur FROM listing WHERE status='active' AND json_extract(specs,'$.compatible') = 1"
+        },
+        "compat_not": {
+          "title": "Not compatible",
+          "sql": "SELECT target, title, url, price_eur FROM listing WHERE status='active' AND json_extract(specs,'$.compatible') = 0"
+        },
+        "price_max": {
+          "title": "Price at most",
+          "params": ["max_price"],
+          "sql": "SELECT target, title, url, price_eur FROM listing WHERE status='active' AND price_eur <= CAST(:max_price AS REAL)"
+        },
+        "new_today": {
+          "title": "New today",
+          "sql": "SELECT target, title, url, price_eur, first_seen FROM listing WHERE status='active' AND date(first_seen) = date('now')"
+        },
+        "price_dropped": {
+          "title": "Price dropped",
+          "sql": "SELECT target, title, url, price_eur FROM listing l WHERE status='active' AND EXISTS (SELECT 1 FROM observation o WHERE o.listing_id = l.id AND o.price_eur > l.price_eur)"
+        }
+      }
+    }
+  }
+}

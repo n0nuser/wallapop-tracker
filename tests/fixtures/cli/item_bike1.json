@@ -1,0 +1,20 @@
+{
+  "hash": "bike1",
+  "title": "Bicicleta de montaña Trek Fuel",
+  "description": "En buen estado, revisada hace poco.",
+  "price": 300,
+  "currency": "EUR",
+  "category_id": 20000,
+  "category": "Sports \u0026 leisure \u003e Bicycles",
+  "seller_hash": "s1",
+  "reserved": false,
+  "sold": false,
+  "expired": false,
+  "shippable": true,
+  "favorited": false,
+  "condition": "good",
+  "location": { "lat": 40.4168, "lng": -3.7038, "city": "Madrid", "postal_code": "28001", "country": "ES" },
+  "url": "https://es.wallapop.com/item/bici-trek-fuel-1",
+  "created_at": "2026-10-30T10:00:00.000Z",
+  "modified_at": "2026-10-30T10:00:00.000Z"
+}
