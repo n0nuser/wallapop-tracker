@@ -161,6 +161,35 @@ class Store(unittest.TestCase):
         self.go(self.replay("r2", [b]), "2026-10-31T10:00:00.000+00:00")
         self.assertAlmostEqual(specs()["eur_per_cm"], 270 / 54)
 
+    # --- seller reputation ---
+
+    def test_seller_info_stored(self):
+        d = self.replay("r1", [P1, P2])
+        shutil.copy(CLI / "seller_s1.json", d / "seller_s1.json")
+        self.go(d, "2026-10-30T10:00:00.000+00:00")
+        row = self.q("SELECT name, rating_average, reviews, verified, seller_type, registered_at, sold, published "
+                     "FROM seller WHERE id='s1'")[0]
+        self.assertEqual(row, ("Bici Outlet", 4.9, 23, 1, "professional", "2020-01-15T10:00:00Z", 45, 50))
+        # sellers without a fixture get a stub row (checked, no data) so they aren't retried every run
+        self.assertEqual(self.q("SELECT count(*) FROM seller")[0][0], 8)
+        self.assertEqual(self.q("SELECT count(*) FROM seller WHERE name IS NULL")[0][0], 7)
+
+    def test_seller_info_disabled(self):
+        text = TOML.replace("max_detail_checks_per_run = {detail}",
+                            "max_detail_checks_per_run = {detail}\nfetch_seller_info = false")
+        d = self.replay("r1", [P1, P2])
+        shutil.copy(CLI / "seller_s1.json", d / "seller_s1.json")
+        self.go(d, "2026-10-30T10:00:00.000+00:00", text=text)
+        self.assertEqual(self.q("SELECT count(*) FROM seller")[0][0], 0)
+
+    def test_seller_cap(self):
+        text = TOML.replace("max_detail_checks_per_run = {detail}",
+                            "max_detail_checks_per_run = {detail}\nmax_seller_checks_per_run = 1")
+        d = self.replay("r1", [P1, P2])
+        shutil.copy(CLI / "seller_s1.json", d / "seller_s1.json")
+        self.go(d, "2026-10-30T10:00:00.000+00:00", text=text)
+        self.assertEqual(self.q("SELECT count(*) FROM seller")[0][0], 1)  # cap of 1 -> only one seller checked
+
     def test_raw_kept_and_history_survives_unexpected_error(self):
         class Boom(Replay):
             def search(self, q, lat, lon, token):
@@ -279,6 +308,12 @@ class CliFetcher(unittest.TestCase):
         with self.assertRaises(Blocked) as cm:
             self.cli(out='{"items":[]}', err="wallapop rejected the wallapop-cli user agent").item("abc")
         self.assertEqual(cm.exception.body, '{"items":[]}')
+
+    def test_user_command(self):
+        c = self.cli(out='{"hash":"s1","name":"Bici Outlet","stats":{"rating_average":4.9}}')
+        self.assertEqual(c.user("s1"), '{"hash":"s1","name":"Bici Outlet","stats":{"rating_average":4.9}}')
+        self.assertEqual(self.calls[0][0], ["wallapop", "user", "show", "s1", "--no-input"])
+        self.assertIsNone(self.cli(rc=4).user("ghost"))  # exit 4 (no such user) -> None, not an exception
 
 
 if __name__ == "__main__":

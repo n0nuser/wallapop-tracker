@@ -27,9 +27,22 @@ CREATE TABLE IF NOT EXISTS observation (
   id INTEGER PRIMARY KEY, listing_id TEXT NOT NULL REFERENCES listing(id), run_at TEXT NOT NULL,
   raw_id INTEGER REFERENCES raw_response(id), price_eur REAL, status TEXT NOT NULL,
   modified_at INTEGER, UNIQUE (listing_id, run_at));
+CREATE TABLE IF NOT EXISTS seller (
+  id TEXT PRIMARY KEY,            -- Wallapop seller hash (same value as listing.seller_id)
+  name TEXT,
+  rating_average REAL,            -- 0..5
+  reviews INTEGER,                -- number of reviews received
+  sold INTEGER,                   -- items sold
+  published INTEGER,              -- items listed
+  verified INTEGER,               -- 0/1
+  seller_type TEXT,               -- individual | professional | ...
+  location TEXT,                  -- seller's city
+  registered_at TEXT,             -- ISO 8601; account age is a scam signal
+  first_seen TEXT NOT NULL,
+  last_checked TEXT);
 """
 DEFAULTS = dict(lat=40.4168, lon=-3.7038, max_pages_per_query=5, max_requests_per_run=150,
-                max_detail_checks_per_run=10)
+                max_detail_checks_per_run=10, fetch_seller_info=True, max_seller_checks_per_run=20)
 LIVE = ("active", "reserved", "missing")  # statuses a listing can hold while it may still be for sale
 
 
@@ -87,6 +100,13 @@ class Cli:
     def item(self, id):
         return self._call("item", "show", id, gone=True)
 
+    def user(self, hash):
+        """`wallapop user show` -> the seller profile JSON. Exit 4 (no such user) -> None."""
+        try:
+            return self._call("user", "show", hash, gone=True)
+        except Gone:
+            return None
+
 
 class Replay:
     def __init__(self, d):
@@ -101,6 +121,12 @@ class Replay:
         f = self.d / f"item_{id}.json"
         if not f.exists():
             raise Gone(id)
+        return f.read_text()
+
+    def user(self, hash):
+        f = self.d / f"seller_{hash}.json"
+        if not f.exists():
+            return None
         return f.read_text()
 
 
@@ -142,8 +168,8 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
     origin = (d["lat"], d["lon"])
     con = sqlite3.connect(db)
     con.executescript(SCHEMA)
-    s = dict(requests=0, pages=0, new=0, updated=0, missing=0, removed=0, sold=0, alive=0, drops=0, rises=0, bumps=0)
-    stop, capped, seen, walked = None, False, set(), []
+    s = dict(requests=0, pages=0, new=0, updated=0, missing=0, removed=0, sold=0, alive=0, drops=0, rises=0, bumps=0, sellers=0)
+    stop, capped, seen, seen_sellers, walked = None, False, set(), set(), []
 
     def store_raw(target, query, page, status, text):
         rid = con.execute("INSERT INTO raw_response(fetched_at,target,query,page,http_status,body) VALUES(?,?,?,?,?,?)",
@@ -224,7 +250,11 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
                     break
                 s["pages"] += 1
                 body = json.loads(text)
-                got += [(parse_row(it, origin), raw) for it in body["items"]]
+                rows = [parse_row(it, origin) for it in body["items"]]
+                got += [(r, raw) for r in rows]
+                for r in rows:
+                    if r["seller_id"]:
+                        seen_sellers.add(r["seller_id"])
                 token = body.get("next_page")
                 if not token:
                     break
@@ -236,6 +266,37 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
             break
     if capped:
         print(f"request cap ({d['max_requests_per_run']}) hit; stopped walking")
+
+    # 1b. seller reputation for sellers seen this run but not yet stored (scam signals).
+    #     Fetched once per seller on first sight, gated by config and capped per run.
+    if not stop and d.get("fetch_seller_info", True):
+        existing = {r[0] for r in con.execute("SELECT id FROM seller")}
+        todo = sorted(h for h in seen_sellers if h and h not in existing)
+        budget = max(0, min(int(d.get("max_seller_checks_per_run", 20)), d["max_requests_per_run"] - s["requests"]))
+        for h in todo[:budget]:
+            s["requests"] += 1
+            try:
+                text = fetch.user(h)
+            except Stop as e:
+                stop = e
+                break
+            if not text:  # no such seller (or replay has no fixture): record a stub so we don't retry every run
+                con.execute("INSERT OR REPLACE INTO seller(id,first_seen,last_checked) VALUES(?,?,?)", (h, now, now))
+                continue
+            try:
+                u = json.loads(text)
+            except json.JSONDecodeError:
+                continue
+            stats = u.get("stats") or {}
+            loc = u.get("location") or {}
+            con.execute(
+                "INSERT OR REPLACE INTO seller(id,name,rating_average,reviews,sold,published,verified,seller_type,location,registered_at,first_seen,last_checked) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                (h, u.get("name"), stats.get("rating_average"), stats.get("reviews"), stats.get("sold"),
+                 stats.get("published"), int(bool(u.get("verified"))), u.get("seller_type"),
+                 loc.get("city"), u.get("registered_at"), now, now))
+            s["sellers"] += 1
+        con.commit()
 
     # 2. missing: previously returned by this query, created inside the window we walked, not returned now.
     #    Absence outside the window proves nothing. Skipped entirely on a stop.
@@ -285,5 +346,6 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
         print(f"{'BLOCKED' if isinstance(stop, Blocked) else 'STOPPED'}: {stop}. Run ended; no missing/removed recorded.")
     print(f"run {now}: requests={s['requests']} pages={s['pages']} new={s['new']} updated={s['updated']} "
           f"(price drops={s['drops']}, rises={s['rises']}, bumps={s['bumps']}) missing={s['missing']} removed={s['removed']} "
-          f"sold={s['sold']} alive={s['alive']}")
+          f"sold={s['sold']} alive={s['alive']} sellers={s['sellers']}")
+    con.close()
     return 2 if isinstance(stop, Blocked) else 1 if stop else 0

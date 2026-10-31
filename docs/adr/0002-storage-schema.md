@@ -9,6 +9,7 @@ One SQLite file. History is append-only; nothing is overwritten except the "curr
 - `raw_response`: immutable. One row per fetch.
 - `listing`: one row per Wallapop id, holding current state.
 - `observation`: append-only, one row per listing per run. Price drops, bumps and removals are derived from it.
+- `seller`: one row per seller, fetched once on first sight. Reputation fields (rating, reviews, sold count, verified flag, account age) flag likely scams.
 
 ```sql
 CREATE TABLE raw_response (
@@ -56,6 +57,21 @@ CREATE TABLE observation (
   modified_at INTEGER,                -- ad's own modified_at (epoch ms); a change at the same price is a bump
   UNIQUE (listing_id, run_at)
 );
+
+CREATE TABLE seller (
+  id             TEXT PRIMARY KEY,    -- Wallapop seller hash (== listing.seller_id)
+  name           TEXT,
+  rating_average REAL,                -- 0..5
+  reviews        INTEGER,             -- reviews received
+  sold           INTEGER,             -- items sold
+  published      INTEGER,             -- items listed
+  verified       INTEGER,             -- 0/1
+  seller_type    TEXT,                -- individual | professional | ...
+  location       TEXT,                -- seller's city
+  registered_at  TEXT,                -- ISO 8601; account age is a scam signal
+  first_seen     TEXT NOT NULL,
+  last_checked   TEXT
+);
 ```
 
 ## Rules
@@ -67,6 +83,7 @@ CREATE TABLE observation (
 - A run that hits a block (CLI exit 5 or the user-agent retry notice) records no `missing` or `removed`.
 - **Price rise, price drop, bump:** compared with the listing's previous observation. A bump is a changed `modified_at` at the same price.
 - **Bargain, comparable group and lowball** are computed at read time from `observation`, not stored, so changing a threshold needs no migration.
+- **Seller reputation** is fetched once per seller on first sight via `wallapop user show`, capped per run (`max_seller_checks_per_run`). It is a snapshot, not refreshed every run; `last_checked` is there for a future refresh policy.
 
 ## Consequences
 

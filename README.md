@@ -14,6 +14,7 @@ There are no hardcoded products. You define **targets** — the things you want 
 - Raw responses are stored untouched (`raw_response`); listings and observations are normalised (`listing`, `observation`). History is append-only — a listing's price over time is never overwritten.
 - Rule-based extractors pull specs from title and description, configured per target in `targets.toml`.
 - A scorer computes bargains and lowball offers per target from the accumulated history.
+- Seller reputation is fetched once per seller (`wallapop user show`): rating, review count, sold count, verified flag and account age — the signals you want for spotting scams.
 
 ## Requirements
 

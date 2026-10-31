@@ -14,6 +14,10 @@ lon = -3.7038
 max_pages_per_query = 5
 max_requests_per_run = 150
 max_detail_checks_per_run = 10
+# Seller reputation (scam signals: rating, review count, account age, verified).
+# Fetched once per seller on first sight, capped per run.
+fetch_seller_info = true
+max_seller_checks_per_run = 20
 
 # ---------------------------------------------------------------------------
 # Example target: second-hand bicycles. Bargain = percentile of the group.

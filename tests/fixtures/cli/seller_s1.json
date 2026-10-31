@@ -1,0 +1,12 @@
+{
+  "hash": "s1",
+  "name": "Bici Outlet",
+  "slug": "bici-outlet-12345678",
+  "url": "https://es.wallapop.com/user/bici-outlet-12345678",
+  "type": "user",
+  "seller_type": "professional",
+  "verified": true,
+  "location": { "lat": 40.4168, "lng": -3.7038, "city": "Madrid", "postal_code": "28001", "country": "ES" },
+  "registered_at": "2020-01-15T10:00:00Z",
+  "stats": { "rating_average": 4.9, "reviews": 23, "sold": 45, "published": 50 }
+}
