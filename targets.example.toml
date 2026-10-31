@@ -53,6 +53,7 @@ eur_per_cm = "price / size_cm"
 reject_above_eur = 300
 lowball_pct = 15
 # stat names a derived value (see extract.derived): bargain when it is at or below `max`.
+# Optional: also require a floor on another field (min_field/min_value), e.g. "at least 12 units".
 bargain = { stat = "price_per_unit", max = 120 }
 queries = ["lavavajillas", "lavadora", "frigorifico"]
 

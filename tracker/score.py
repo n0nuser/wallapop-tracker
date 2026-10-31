@@ -11,11 +11,13 @@ Two bargain rules, selected by `bargain.stat` per target:
   p25 of each group's current prices are computed; a listing is a bargain when
   `price <= factor * median` (`factor` defaults to 0.85, editable as `bargain.factor`).
 - any other value: the value names a derived specs field (see the target's
-  `extract.derived`), and a listing is a bargain when `specs[stat] <= bargain.max`.
+  `extract.derived`), and a listing is a bargain when `specs[stat] <= bargain.max`
+  (optionally also `specs[bargain.min_field] >= bargain.min_value`, e.g. "at least N TB").
 
 `reject_above_eur` overrides everything: a listing priced above it is never a bargain.
-The lowball offer is `max(bargain_threshold, price * (1 - lowball_pct/100))` in `p25`
-mode, and `price * (1 - lowball_pct/100)` in threshold mode.
+Listings the extractor marks irrelevant (parts, accessories) are skipped. The lowball
+offer is `max(bargain_threshold, price * (1 - lowball_pct/100))` in `p25` mode, and
+`price * (1 - lowball_pct/100)` in threshold mode.
 
 Known gap: the extractor does not emit a `model` (or `brand`) field, so a `group_by`
 that names `model` cannot form comparable groups yet. We degrade gracefully: if the
@@ -71,16 +73,19 @@ def _not_above(reject_above, price):
 
 
 def _score_threshold(b, reject_above, lowball_pct, rows):
-    """Threshold mode: bargain iff specs[stat] <= max (stat = a derived specs field)."""
+    """Threshold mode: bargain iff specs[stat] <= max (and specs[min_field] >= min_value)."""
     stat = b.get("stat")
     max_val = b.get("max")
+    min_field, min_value = b.get("min_field"), b.get("min_value")
     out = []
     for r in rows:
         specs = r.get("specs") or {}
         price = r["price"]
         value = specs.get(stat)
+        floor_ok = (min_field is None or min_value is None
+                    or (specs.get(min_field) is not None and specs.get(min_field) >= min_value))
         bargain = bool(value is not None and max_val is not None and value <= max_val
-                       and _not_above(reject_above, price))
+                       and floor_ok and _not_above(reject_above, price))
         out.append({"id": r["id"], "title": r["title"], "url": r["url"], "price": price,
                     "metric": value, "threshold_eur": None, "is_bargain": bargain,
                     "lowball_offer": _lowball(price, None, lowball_pct)})
@@ -131,6 +136,7 @@ def active_listings(con, target):
 
 def score_target(target_cfg, rows):
     """Score one target's active listings. Returns a summary dict (see `render_target`)."""
+    rows = [r for r in rows if (r.get("specs") or {}).get("relevant") is not False]
     b = target_cfg.get("bargain", {})
     reject_above = target_cfg.get("reject_above_eur")
     lowball_pct = float(target_cfg.get("lowball_pct", 0))
@@ -150,7 +156,8 @@ def score_target(target_cfg, rows):
                 "listings": listings, "note": note}
     if stat:
         return {"stat": stat,
-                "thresholds": {"max": b.get("max"), "reject_above_eur": reject_above,
+                "thresholds": {"max": b.get("max"), "min_field": b.get("min_field"),
+                               "min_value": b.get("min_value"), "reject_above_eur": reject_above,
                                "lowball_pct": target_cfg.get("lowball_pct")},
                 "groups": [], "fields": [],
                 "listings": _score_threshold(b, reject_above, lowball_pct, rows), "note": None}

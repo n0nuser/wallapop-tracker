@@ -62,6 +62,25 @@ class ThresholdBargain(unittest.TestCase):
         by = {l["id"]: l for l in score.score_target(self.cfg(), rows)["listings"]}
         self.assertEqual(by["a"]["lowball_offer"], 170.0)  # 200 * 0.85
 
+    def test_min_field_floor(self):
+        cfg = {"bargain": {"stat": "eur_per_tb", "max": 18, "min_field": "total_tb", "min_value": 12},
+               "reject_above_eur": 400, "lowball_pct": 10}
+        rows = [
+            listing("a", "14TB drive", 210.0, {"eur_per_tb": 15.0, "total_tb": 14.0}, target="appliances"),  # bargain
+            listing("b", "8TB drive", 120.0, {"eur_per_tb": 15.0, "total_tb": 8.0}, target="appliances"),    # below floor
+        ]
+        by = {l["id"]: l for l in score.score_target(cfg, rows)["listings"]}
+        self.assertTrue(by["a"]["is_bargain"])
+        self.assertFalse(by["b"]["is_bargain"])
+
+    def test_irrelevant_listings_skipped(self):
+        rows = [
+            listing("1", "motor", 5.0, {"relevant": False}),
+            listing("2", "drone", 100.0, {"relevant": True, "model": "x", "condition": "new"}),
+        ]
+        s = score.score_target(p25_cfg(), rows)
+        self.assertEqual({l["id"] for l in s["listings"]}, {"2"})  # the part is excluded
+
 
 class P25Bargain(unittest.TestCase):
     def rows(self):
