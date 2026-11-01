@@ -136,7 +136,9 @@ def active_listings(con, target):
 
 def score_target(target_cfg, rows):
     """Score one target's active listings. Returns a summary dict (see `render_target`)."""
-    rows = [r for r in rows if (r.get("specs") or {}).get("relevant") is not False]
+    rows = [r for r in rows
+            if (r.get("specs") or {}).get("relevant") is not False
+            and (r.get("specs") or {}).get("condition") != "broken"]
     b = target_cfg.get("bargain", {})
     reject_above = target_cfg.get("reject_above_eur")
     lowball_pct = float(target_cfg.get("lowball_pct", 0))

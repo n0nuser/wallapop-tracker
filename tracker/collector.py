@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS listing (
   first_seen TEXT NOT NULL, last_seen TEXT NOT NULL, created_at INTEGER, price_eur REAL,
   status TEXT NOT NULL,           -- active | missing | reserved | sold | removed
   seller_id TEXT, shipping INTEGER, location TEXT, distance_km REAL, specs TEXT,
+  images TEXT,                    -- JSON array of image URLs (first = thumbnail)
   last_checked TEXT);             -- last `item show` call; oldest-checked-first picks the next detail checks
 CREATE TABLE IF NOT EXISTS listing_query (
   listing_id TEXT NOT NULL REFERENCES listing(id), target TEXT NOT NULL, query TEXT NOT NULL,
@@ -157,6 +158,19 @@ def parse_row(it, origin):
         "seller_id": it.get("seller_hash"), "city": loc.get("city"), "url": it["url"],
         "distance_km": round(_km(*origin, lat, lon), 1) if lat is not None and lon is not None else None,
         "created_at": _ms(it.get("created_at")), "modified_at": _ms(it.get("modified_at")), "status": status_of(it),
+        "images": it.get("images") or [],
+    }
+
+
+def _parse_seller(text):
+    """`wallapop user show` JSON -> the seller-table columns."""
+    u = json.loads(text)
+    stats = u.get("stats") or {}
+    loc = u.get("location") or {}
+    return {
+        "name": u.get("name"), "rating_average": stats.get("rating_average"), "reviews": stats.get("reviews"),
+        "sold": stats.get("sold"), "published": stats.get("published"), "verified": int(bool(u.get("verified"))),
+        "seller_type": u.get("seller_type"), "location": loc.get("city"), "registered_at": u.get("registered_at"),
     }
 
 
@@ -206,19 +220,19 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
                                (r["id"],)).fetchone()
             loc = r["city"] or ""
             if prev is None:
-                con.execute("INSERT INTO listing VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)",
+                con.execute("INSERT INTO listing VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)",
                             (r["id"], tname, r["title"], r["description"], r["url"], now, now, r["created_at"], r["price"],
                              r["status"], r["seller_id"], int(r["shipping"]), loc, r["distance_km"],
-                             specs_json(tname, r["title"], r["description"], r["price"])))
+                             specs_json(tname, r["title"], r["description"], r["price"]), json.dumps(r["images"])))
                 s["new"] += 1
             else:
                 specs_sql, args = "", [r["title"], r["description"], r["price"], now, r["distance_km"], r["url"],
-                                       r["seller_id"], int(r["shipping"]), loc, r["status"]]
+                                       r["seller_id"], int(r["shipping"]), loc, r["status"], json.dumps(r["images"])]
                 if prev[:3] != (r["price"], r["title"], r["description"]):  # re-extract on any change; price feeds derived values
                     specs_sql = ",specs=?"
                     args.append(specs_json(prev[3], r["title"], r["description"], r["price"]))  # the listing's own target
                 con.execute("UPDATE listing SET title=?,description=?,price_eur=?,last_seen=?,distance_km=?,url=?,seller_id=?,"
-                            f"shipping=?,location=?,status=?{specs_sql} WHERE id=?", (*args, r["id"]))
+                            f"shipping=?,location=?,status=?,images=?{specs_sql} WHERE id=?", (*args, r["id"]))
                 old_price, old_mod = last if last else (prev[0], None)
                 if r["price"] is not None and old_price is not None and r["price"] < old_price:
                     s["drops"] += 1
@@ -284,17 +298,15 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
                 con.execute("INSERT OR REPLACE INTO seller(id,first_seen,last_checked) VALUES(?,?,?)", (h, now, now))
                 continue
             try:
-                u = json.loads(text)
-            except json.JSONDecodeError:
+                su = _parse_seller(text)
+            except (json.JSONDecodeError, AttributeError, TypeError):
                 continue
-            stats = u.get("stats") or {}
-            loc = u.get("location") or {}
             con.execute(
                 "INSERT OR REPLACE INTO seller(id,name,rating_average,reviews,sold,published,verified,seller_type,location,registered_at,first_seen,last_checked) "
                 "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-                (h, u.get("name"), stats.get("rating_average"), stats.get("reviews"), stats.get("sold"),
-                 stats.get("published"), int(bool(u.get("verified"))), u.get("seller_type"),
-                 loc.get("city"), u.get("registered_at"), now, now))
+                (h, su["name"], su["rating_average"], su["reviews"], su["sold"],
+                 su["published"], su["verified"], su["seller_type"],
+                 su["location"], su["registered_at"], now, now))
             s["sellers"] += 1
         con.commit()
 
@@ -349,3 +361,77 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
           f"sold={s['sold']} alive={s['alive']} sellers={s['sellers']}")
     con.close()
     return 2 if isinstance(stop, Blocked) else 1 if stop else 0
+
+
+def backfill_sellers(db="tracker.db", targets="targets.toml", max_checks=0):
+    """Fetch `wallapop user show` for every listing's seller not yet stored (raises coverage).
+    Returns the number of sellers fetched, or -1 on a block."""
+    import time
+    cfg = tomllib.loads(Path(targets).read_text())
+    d = {**DEFAULTS, **cfg.get("defaults", {})}
+    con = sqlite3.connect(db)
+    con.executescript(SCHEMA)
+    cli = Cli(max(3.0, float(d.get("min_delay_s", 3))))
+    existing = {r[0] for r in con.execute("SELECT id FROM seller")}
+    todo = sorted(h for (h,) in con.execute("SELECT DISTINCT seller_id FROM listing WHERE seller_id IS NOT NULL") if h and h not in existing)
+    now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="milliseconds")
+    n = 0
+    for h in todo:
+        if max_checks and n >= max_checks:
+            break
+        try:
+            text = cli.user(h)
+        except Stop as e:
+            print(f"STOPPED: {e}")
+            con.close()
+            return -1
+        if not text:
+            con.execute("INSERT OR REPLACE INTO seller(id,first_seen,last_checked) VALUES(?,?,?)", (h, now, now))
+            continue
+        try:
+            su = _parse_seller(text)
+        except (json.JSONDecodeError, AttributeError, TypeError):
+            continue
+        con.execute(
+            "INSERT OR REPLACE INTO seller(id,name,rating_average,reviews,sold,published,verified,seller_type,location,registered_at,first_seen,last_checked) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            (h, su["name"], su["rating_average"], su["reviews"], su["sold"], su["published"], su["verified"],
+             su["seller_type"], su["location"], su["registered_at"], now, now))
+        n += 1
+    con.commit()
+    con.close()
+    print(f"backfilled {n} sellers ({len(todo)} wanted)")
+    return n
+
+
+def download_images(db="tracker.db", images_dir="images", max_images=0, delay=0.2):
+    """Download the first image of each listing (once) into images_dir/<id>.jpg. Returns count downloaded."""
+    import time as _t
+    import urllib.request
+    con = sqlite3.connect(db)
+    Path(images_dir).mkdir(parents=True, exist_ok=True)
+    rows = con.execute("SELECT id, images FROM listing WHERE images IS NOT NULL").fetchall()
+    n = 0
+    for lid, imgs_json in rows:
+        if max_images and n >= max_images:
+            break
+        dest = Path(images_dir) / f"{lid}.jpg"
+        if dest.exists():
+            continue
+        try:
+            urls = json.loads(imgs_json)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if not urls:
+            continue
+        try:
+            req = urllib.request.Request(urls[0], headers={"User-Agent": "Mozilla/5.0 (compatible; wallapop-tracker)"})
+            with urllib.request.urlopen(req, timeout=20) as resp, open(dest, "wb") as f:
+                f.write(resp.read())
+            n += 1
+            _t.sleep(delay)
+        except Exception:
+            continue
+    con.close()
+    print(f"downloaded {n} images to {images_dir}/")
+    return n
