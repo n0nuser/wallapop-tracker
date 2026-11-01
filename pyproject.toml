@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wallapop-tracker"
+version = "0.1.0"
+description = "Read-only Wallapop (Spain) tracker: collect listings, extract specs, score bargains, spot risky sellers."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[project.scripts]
+tracker = "tracker.__main__:main"
+
+[tool.setuptools]
+packages = ["tracker"]
