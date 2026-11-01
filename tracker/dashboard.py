@@ -155,7 +155,7 @@ td.num{text-align:end;font-variant-numeric:tabular-nums}
 <header><h1>Wallapop tracker</h1><span class="muted" id="count"></span></header>
 <div class="legend"><b>Legend</b>
   <span><span class="tag bargain">bargain</span> under the target threshold</span>
-  <span><span class="tag ok">ok</span> / <span class="tag no">no</span> compatible with your radio</span>
+  <span><span class="tag ok">ok</span> / <span class="tag no">no</span> compatible with the target's requirements</span>
   <span><span class="tag warn">⚠ seller</span> risky: new account, no/few reviews, unverified, low rating</span>
   <span><span class="swatch" style="background:light-dark(oklch(.5 .15 150),oklch(.6 .15 150))"></span> price ↓ / <span class="swatch" style="background:light-dark(oklch(.5 .15 25),oklch(.6 .15 25))"></span> price ↑</span>
   <span><span class="swatch" style="background:light-dark(oklch(.7 .15 85),oklch(.65 .14 85))"></span> bargain / <span class="swatch" style="background:light-dark(oklch(.55 .15 250),oklch(.6 .13 250))"></span> not, in the chart</span>
