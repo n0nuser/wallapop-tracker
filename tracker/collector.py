@@ -44,6 +44,13 @@ CREATE TABLE IF NOT EXISTS seller (
 """
 DEFAULTS = dict(lat=40.4168, lon=-3.7038, max_pages_per_query=5, max_requests_per_run=150,
                 max_detail_checks_per_run=10, fetch_seller_info=True, max_seller_checks_per_run=20)
+
+
+def _migrate(con):
+    """Add columns that older databases may lack (CREATE TABLE IF NOT EXISTS won't alter existing tables)."""
+    if "images" not in {r[1] for r in con.execute("PRAGMA table_info(listing)")}:
+        con.execute("ALTER TABLE listing ADD COLUMN images TEXT")
+    con.commit()
 LIVE = ("active", "reserved", "missing")  # statuses a listing can hold while it may still be for sale
 
 
@@ -182,6 +189,7 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
     origin = (d["lat"], d["lon"])
     con = sqlite3.connect(db)
     con.executescript(SCHEMA)
+    _migrate(con)
     s = dict(requests=0, pages=0, new=0, updated=0, missing=0, removed=0, sold=0, alive=0, drops=0, rises=0, bumps=0, sellers=0)
     stop, capped, seen, seen_sellers, walked = None, False, set(), set(), []
 
@@ -371,6 +379,7 @@ def backfill_sellers(db="tracker.db", targets="targets.toml", max_checks=0):
     d = {**DEFAULTS, **cfg.get("defaults", {})}
     con = sqlite3.connect(db)
     con.executescript(SCHEMA)
+    _migrate(con)
     cli = Cli(max(3.0, float(d.get("min_delay_s", 3))))
     existing = {r[0] for r in con.execute("SELECT id FROM seller")}
     todo = sorted(h for (h,) in con.execute("SELECT DISTINCT seller_id FROM listing WHERE seller_id IS NOT NULL") if h and h not in existing)
@@ -387,6 +396,7 @@ def backfill_sellers(db="tracker.db", targets="targets.toml", max_checks=0):
             return -1
         if not text:
             con.execute("INSERT OR REPLACE INTO seller(id,first_seen,last_checked) VALUES(?,?,?)", (h, now, now))
+            con.commit()
             continue
         try:
             su = _parse_seller(text)
@@ -398,6 +408,7 @@ def backfill_sellers(db="tracker.db", targets="targets.toml", max_checks=0):
             (h, su["name"], su["rating_average"], su["reviews"], su["sold"], su["published"], su["verified"],
              su["seller_type"], su["location"], su["registered_at"], now, now))
         n += 1
+        con.commit()
     con.commit()
     con.close()
     print(f"backfilled {n} sellers ({len(todo)} wanted)")
@@ -409,8 +420,11 @@ def download_images(db="tracker.db", images_dir="images", max_images=0, delay=0.
     import time as _t
     import urllib.request
     con = sqlite3.connect(db)
+    con.executescript(SCHEMA)
+    _migrate(con)
     Path(images_dir).mkdir(parents=True, exist_ok=True)
     rows = con.execute("SELECT id, images FROM listing WHERE images IS NOT NULL").fetchall()
+    con.close()  # release the DB before the slow downloads
     n = 0
     for lid, imgs_json in rows:
         if max_images and n >= max_images:
@@ -432,6 +446,5 @@ def download_images(db="tracker.db", images_dir="images", max_images=0, delay=0.
             _t.sleep(delay)
         except Exception:
             continue
-    con.close()
     print(f"downloaded {n} images to {images_dir}/")
     return n

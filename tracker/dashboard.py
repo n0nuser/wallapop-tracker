@@ -11,7 +11,7 @@ import sqlite3
 import tomllib
 from pathlib import Path
 
-from tracker import score
+from tracker import collector, score
 
 
 def _rows(con):
@@ -59,10 +59,8 @@ def generate(db="tracker.db", targets="targets.toml", out="dashboard.html", imag
     cfg = tomllib.loads(Path(targets).read_text())
     con = sqlite3.connect(db)
     con.row_factory = sqlite3.Row
-    con.executescript("CREATE TABLE IF NOT EXISTS listing (id TEXT PRIMARY KEY, target TEXT, title TEXT, "
-                      "description TEXT, url TEXT, first_seen TEXT, last_seen TEXT, created_at INTEGER, "
-                      "price_eur REAL, status TEXT, seller_id TEXT, shipping INTEGER, location TEXT, "
-                      "distance_km REAL, specs TEXT, images TEXT, last_checked TEXT);")
+    con.executescript(collector.SCHEMA)
+    collector._migrate(con)
     listings = _rows(con)
 
     # bargain + metric per target

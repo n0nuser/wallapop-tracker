@@ -6,7 +6,7 @@ OPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast
 
 # Generic Spanish condition words; a target can override with extract.condition = [[label, regex], ...]
 CONDITION = [
-    ["broken", r"averiad|(?<!o )no funciona|para piezas|despiece|\broto\b"],
+    ["broken", r"averiad|(?<!o )no funciona|para piezas|despiece|\broto\b|fallos|defectuos"],
     ["like_new", r"como nuevo|casi nuevo|practicamente (nuevo|a estrenar)|poco uso|muy poco"],
     ["new", r"\b(nuevo|precintad[oa]s?|sin estrenar|a estrenar|sin usar)\b"],
     ["used", r"\busado|segunda mano|marcas de uso|signos de uso|reacondicionad"],
