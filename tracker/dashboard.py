@@ -111,8 +111,9 @@ HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 :root{interpolate-size:allow-keywords;scrollbar-gutter:stable;text-wrap:pretty;overflow-wrap:break-word;
   font-synthesis:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;color-scheme:light dark;
-  --bg:light-dark(oklch(.985 0 none),oklch(.16 0 none));
+  --bg:light-dark(oklch(.985 0 none),oklch(.155 0 none));
   --surface:light-dark(oklch(1 0 none),oklch(.21 0 none));
+  --surface-2:light-dark(oklch(.975 0 none),oklch(.19 0 none));
   --fg:light-dark(oklch(.22 0 none),oklch(.92 0 none));
   --muted:light-dark(oklch(.52 0 none),oklch(.68 0 none));
   --border:light-dark(oklch(.9 0 none),oklch(.3 0 none));
@@ -124,17 +125,24 @@ HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   --ease-out:cubic-bezier(.23,1,.32,1);
   --ease-in-out:cubic-bezier(.77,0,.175,1);
 }
-body{margin:0;min-height:100svh;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding-inline:1rem;padding-block-end:3rem}
-h1{font-size:1.1rem;margin:0;text-wrap:balance}
+body{margin:0;min-height:100svh;background:var(--bg);color:var(--fg);
+  font:100%/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  text-rendering:optimizeLegibility}
+h1{font-size:1.2rem;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin:0}
 img,svg,video{display:block;max-width:100%;height:auto}
-input,textarea,select{font-size:max(16px,1rem)}
+input,textarea,select{font-size:max(16px,1rem);font-family:inherit}
 :focus-visible{outline:max(2px,.08em) solid currentColor;outline-offset:.25em}
 a{color:var(--link);text-decoration:none;transition:transform 160ms var(--ease-out)}
 a:active{transform:scale(.97)}
-header{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;padding-block:1rem .5rem}
 .muted{color:var(--muted)}
-.legend{display:flex;flex-wrap:wrap;gap:.6rem 1.25rem;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:.6rem;padding:.6rem .8rem;margin-block:0 .75rem;font-size:.82rem;color:var(--muted)}
-.legend b{color:var(--fg);font-weight:600}
+#chrome{position:sticky;top:0;z-index:20;padding-inline:1rem;padding-block:.7rem .6rem;
+  background:light-dark(oklch(.985 0 none/.82),oklch(.155 0 none/.82));
+  backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-block-end:1px solid var(--border)}
+header{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;margin-block-end:.45rem}
+.legend{border:1px solid var(--border);border-radius:.6rem;background:var(--surface);padding:.45rem .7rem;margin-block-end:.6rem;font-size:.8rem;color:var(--muted)}
+.legend summary{cursor:pointer;font-weight:600;color:var(--fg);user-select:none}
+.legend-items{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;align-items:center;padding-block-start:.4rem}
 .swatch{display:inline-block;inline-size:.8em;block-size:.8em;border-radius:.25em;vertical-align:-.06em}
 .tag{font-size:.78rem;padding:1px 7px;border-radius:999px;background:var(--border);white-space:nowrap;font-weight:600}
 .bargain{background:var(--bargain);color:light-dark(oklch(.32 .09 90),oklch(.95 .08 90))}
@@ -144,53 +152,65 @@ header{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;padding-block
 .warn-tip{position:relative;display:inline-block;cursor:help}
 .warn-tip::after{content:attr(data-tip);position:absolute;inset-block-end:125%;inset-inline-start:0;background:var(--fg);color:var(--bg);padding:.35rem .55rem;border-radius:.45rem;font-size:.74rem;font-weight:500;line-height:1.35;white-space:nowrap;opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity 150ms var(--ease-out),transform 150ms var(--ease-out);z-index:30;box-shadow:0 2px 10px rgb(0 0 0/.18)}
 .warn-tip:hover::after,.warn-tip:focus-visible::after{opacity:1;transform:translateY(0)}
-#filters{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:flex-end;background:var(--surface);border:1px solid var(--border);padding:.7rem .9rem;border-radius:.6rem;margin-block-end:1rem}
-#filters label{display:flex;flex-direction:column;font-size:.78rem;color:var(--muted);gap:.2rem}
+#filters{display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:flex-end}
+#filters label{display:flex;flex-direction:column;font-size:.72rem;color:var(--muted);gap:.2rem}
 #filters label span{flex-direction:row;align-items:center;gap:.35rem;font-size:.85rem;color:var(--fg)}
-input,select{font:inherit;padding:.35rem .5rem;border:1px solid var(--border);border-radius:.4rem;background:var(--surface);color:var(--fg)}
-input[type=number]{inline-size:5rem}
+input,select{font:inherit;padding:.35rem .55rem;border:1px solid var(--border);border-radius:.45rem;background:var(--surface);color:var(--fg)}
+input:focus,select:focus{border-color:var(--link)}
+input[type=number]{inline-size:5.2rem}
+input[type=checkbox]{inline-size:1em;block-size:1em}
+#scatter{margin-inline:1rem;margin-block:.8rem;background:var(--surface);border:1px solid var(--border);border-radius:.6rem;padding:.6rem .7rem}
+#scatter h2{font-size:.8rem;font-weight:600;color:var(--muted);margin:0 0 .3rem}
 table{border-collapse:collapse;inline-size:100%;background:var(--surface)}
-th,td{border-block-end:1px solid var(--border);padding:.45rem .55rem;text-align:start;vertical-align:middle}
-th{font-size:.72rem;color:var(--muted);position:sticky;inset-block-start:0;background:var(--surface);white-space:nowrap}
+th,td{border-block-end:1px solid var(--border);padding:.5rem .6rem;text-align:start;vertical-align:middle}
+th{font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:var(--chrome-h,0);background:var(--surface);white-space:nowrap;z-index:10}
 th.sortable{cursor:pointer;user-select:none}
 th.sortable::after{content:"↕";opacity:.25;margin-inline-start:.35em}
 th.sortable.asc::after{content:"▲";opacity:1}
 th.sortable.desc::after{content:"▼";opacity:1}
-td.num{text-align:end;font-variant-numeric:tabular-nums}
-.thumb{inline-size:64px;block-size:48px;aspect-ratio:4/3;object-fit:cover;border-radius:.4rem;background:var(--border);display:block}
-.seller{font-size:.8rem}.seller .muted{color:var(--muted)}
-#scatter{margin-block-end:1rem;background:var(--surface);border:1px solid var(--border);padding:.6rem}
+tbody tr:nth-child(even){background:var(--surface-2)}
 tbody tr{transition:background-color 150ms var(--ease-out)}
+td.num{text-align:end;font-variant-numeric:tabular-nums}
+.thumb{inline-size:64px;block-size:48px;aspect-ratio:4/3;object-fit:cover;border-radius:.45rem;background:var(--border);display:block}
+.seller{font-size:.8rem}.seller .muted{color:var(--muted)}
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty b{display:block;font-size:1.1rem;color:var(--fg);margin-block-end:.3rem}
 @media (hover:hover) and (pointer:fine){
   a:hover{text-decoration:underline}
-  tbody tr:hover{background:light-dark(oklch(.97 0 none),oklch(.24 0 none))}
+  tbody tr:hover{background:light-dark(oklch(.965 0 none),oklch(.24 0 none))}
 }
 @media (prefers-reduced-motion:reduce){
-  a{transition:none}
-  a:active{transform:none}
-  tbody tr{transition:none}
+  a{transition:none}a:active{transform:none}tbody tr{transition:none}.warn-tip::after{transition:none}
+}
+@media (prefers-reduced-transparency:reduce){
+  #chrome{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
 }
 </style></head><body>
-<header><h1>Wallapop tracker</h1><span class="muted" id="count"></span></header>
-<div class="legend"><b>Legend</b>
-  <span><span class="tag bargain">bargain</span> under the target threshold</span>
-  <span><span class="tag ok">ok</span> / <span class="tag no">no</span> compatible with the target's requirements</span>
-  <span><span class="tag warn">⚠ seller</span> risky: new account, no/few reviews, unverified, low rating</span>
-  <span><span class="swatch" style="background:light-dark(oklch(.5 .15 150),oklch(.6 .15 150))"></span> price ↓ / <span class="swatch" style="background:light-dark(oklch(.5 .15 25),oklch(.6 .15 25))"></span> price ↑</span>
-  <span><span class="swatch" style="background:light-dark(oklch(.7 .15 85),oklch(.65 .14 85))"></span> bargain / <span class="swatch" style="background:light-dark(oklch(.55 .15 250),oklch(.6 .13 250))"></span> not, in the chart</span>
+<div id="chrome">
+  <header><h1>Wallapop tracker</h1><span class="muted" id="count"></span></header>
+  <details class="legend">
+    <summary>Legend</summary>
+    <div class="legend-items">
+      <span><span class="tag bargain">bargain</span> under the target threshold</span>
+      <span><span class="tag ok">ok</span> / <span class="tag no">no</span> compatible with the target's requirements</span>
+      <span><span class="tag warn">⚠ seller</span> risky: new account, no/few reviews, unverified, low rating</span>
+      <span><span class="swatch" style="background:light-dark(oklch(.5 .15 150),oklch(.6 .15 150))"></span> price ↓ / <span class="swatch" style="background:light-dark(oklch(.5 .15 25),oklch(.6 .15 25))"></span> price ↑</span>
+      <span><span class="swatch" style="background:light-dark(oklch(.7 .15 85),oklch(.65 .14 85))"></span> bargain / <span class="swatch" style="background:light-dark(oklch(.55 .15 250),oklch(.6 .13 250))"></span> not, in the chart</span>
+    </div>
+  </details>
+  <form id="filters" onsubmit="return false">
+    <label>target<select id="target"><option value="">all</option>__TARGETS__</select></label>
+    <label>text<input id="text" placeholder="title / brand / model"></label>
+    <label>compat<select id="compat"><option value="">all</option><option value="ok">compatible</option><option value="no">not</option></select></label>
+    <label>price ≤<input id="pmax" type="number" min="0"></label>
+    <label>€/unit ≤<input id="umax" type="number" min="0" step="0.1"></label>
+    <label>min rating<input id="rmin" type="number" min="0" max="5" step="0.1" value="0"></label>
+    <label><span><input type="checkbox" id="bargain"> bargain</span></label>
+    <label><span><input type="checkbox" id="relevant" checked> relevant only</span></label>
+    <label><span><input type="checkbox" id="newtoday"> new</span></label>
+    <label><span><input type="checkbox" id="dropped"> dropped</span></label>
+  </form>
 </div>
-<form id="filters" onsubmit="return false">
-  <label>target<select id="target"><option value="">all</option>__TARGETS__</select></label>
-  <label>text<input id="text" placeholder="title / brand / model"></label>
-  <label>compat<select id="compat"><option value="">all</option><option value="ok">compatible</option><option value="no">not</option></select></label>
-  <label>price ≤<input id="pmax" type="number" min="0"></label>
-  <label>€/unit ≤<input id="umax" type="number" min="0" step="0.1"></label>
-  <label>min rating<input id="rmin" type="number" min="0" max="5" step="0.1" value="0"></label>
-  <label><span><input type="checkbox" id="bargain"> bargain</span></label>
-  <label><span><input type="checkbox" id="relevant" checked> relevant only</span></label>
-  <label><span><input type="checkbox" id="newtoday"> new</span></label>
-  <label><span><input type="checkbox" id="dropped"> dropped</span></label>
-</form>
 <div id="scatter"></div>
 <table><thead><tr><th></th><th class="sortable" data-sort="title">title</th><th class="num sortable" data-sort="price">price</th><th class="sortable" data-sort="target">target</th>
 <th class="num sortable" data-sort="metric">€/unit</th><th class="sortable" data-sort="condition">condition</th><th>compat</th><th class="sortable" data-sort="seller">seller</th><th>history</th><th>seen</th></tr></thead>
@@ -217,6 +237,7 @@ function matches(l,f){
   return true;
 }
 const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const eur = n => n==null ? "" : "€"+n.toLocaleString("es-ES");
 function spark(hist){
   const ps=(hist||[]).map(x=>x[1]).filter(p=>p!=null);
   if(ps.length<2) return '<span class="muted">—</span>';
@@ -247,7 +268,7 @@ function row(l){
   return `<tr>
     <td>${img}</td>
     <td><a href="${esc(l.url)}" target="_blank">${esc(l.title)}</a> ${tag(l.bargain?"bargain":"","bargain")}</td>
-    <td class="num">${l.price==null?"":l.price}</td>
+    <td class="num">${eur(l.price)}</td>
     <td>${esc(l.target)}</td>
     <td class="num">${metric}</td>
     <td>${tag(l.condition||"")}</td>
@@ -258,33 +279,21 @@ function row(l){
 }
 function scatter(list){
   const pts=list.filter(l=>l.metric!=null&&l.price!=null);
-  const W=640,H=260,pl=40,pr=10,pt=12,pb=26;
-  if(!pts.length){$("scatter").innerHTML="";return;}
+  const box=$("scatter");
+  if(!pts.length){box.innerHTML="";return;}
+  const W=640,H=240,pl=44,pr=12,pt=10,pb=28;
   const xmax=Math.max(...pts.map(p=>p.price))*1.05||1, ymax=Math.max(...pts.map(p=>p.metric))*1.1||1;
   const X=p=>pl+(p/xmax)*(W-pl-pr), Y=p=>H-pb-(p/ymax)*(H-pt-pb);
+  const grid=(()=>{let g="";for(let i=1;i<4;i++){g+=`<line x1="${pl+(W-pl-pr)*i/4}" y1="${pt}" x2="${pl+(W-pl-pr)*i/4}" y2="${H-pb}" stroke="var(--border)"/>`;}for(let i=1;i<4;i++){g+=`<line x1="${pl}" y1="${pt+(H-pt-pb)*i/4}" x2="${W-pr}" y2="${pt+(H-pt-pb)*i/4}" stroke="var(--border)"/>`;}return g;})();
   const dots=pts.map(p=>{const c=p.bargain?"#e8a400":"#4a7fd0";
     return `<circle cx="${X(p.price)}" cy="${Y(p.metric)}" r="5" fill="${c}"><title>${esc(p.title)} — €${p.price}, ${p.metric.toFixed(1)}/u</title></circle>`;}).join("");
-  $("scatter").innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  box.innerHTML=`<h2>price vs €/unit</h2><svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+    ${grid}
     <line x1="${pl}" y1="${H-pb}" x2="${W-pr}" y2="${H-pb}" stroke="#888"/>
     <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${H-pb}" stroke="#888"/>
-    <text x="${pl}" y="${H-8}" font-size="11">€0</text>
-    <text x="${W-pr-30}" y="${H-8}" font-size="11">€${xmax.toFixed(0)}</text>
-    <text x="2" y="${pt+4}" font-size="11">€${ymax.toFixed(0)}/u</text>${dots}</svg>`;
-}
-function render(){
-  const f=state();
-  let list=DATA.filter(l=>matches(l,f));
-  if(sortKey){
-    const k=sortKey;
-    list=[...list].sort((a,b)=>{const va=val(a,k),vb=val(b,k);return va===vb?0:(va<vb?-1:1)*sortDir;});
-  }
-  $("rows").innerHTML=list.length?list.map(row).join(""):'<tr><td colspan="10" class="muted">no listings match</td></tr>';
-  $("count").textContent=`${list.length} of ${DATA.length} listings`;
-  scatter(list);
-  document.querySelectorAll("th[data-sort]").forEach(th=>{
-    th.classList.toggle("asc", th.dataset.sort===sortKey && sortDir===1);
-    th.classList.toggle("desc", th.dataset.sort===sortKey && sortDir===-1);
-  });
+    <text x="${pl}" y="${H-10}" font-size="11">€0</text>
+    <text x="${W-pr-40}" y="${H-10}" font-size="11">€${xmax.toFixed(0)}</text>
+    <text x="2" y="${pt+10}" font-size="11">€${ymax.toFixed(0)}/u</text>${dots}</svg>`;
 }
 let sortKey=null, sortDir=1;
 function val(l,k){
@@ -296,11 +305,29 @@ function val(l,k){
   if(k==="condition") return l.condition||"";
   return "";
 }
+function render(){
+  const f=state();
+  let list=DATA.filter(l=>matches(l,f));
+  if(sortKey){
+    const k=sortKey;
+    list=[...list].sort((a,b)=>{const va=val(a,k),vb=val(b,k);return va===vb?0:(va<vb?-1:1)*sortDir;});
+  }
+  $("rows").innerHTML=list.length?list.map(row).join(""):'<tr><td colspan="10"><div class="empty"><b>No listings match</b>Try clearing or loosening the filters.</div></td></tr>';
+  $("count").textContent=`${list.length} of ${DATA.length} listings`;
+  scatter(list);
+  document.querySelectorAll("th[data-sort]").forEach(th=>{
+    th.classList.toggle("asc", th.dataset.sort===sortKey && sortDir===1);
+    th.classList.toggle("desc", th.dataset.sort===sortKey && sortDir===-1);
+  });
+}
 document.querySelectorAll("th[data-sort]").forEach(th=>th.addEventListener("click",()=>{
   const k=th.dataset.sort;
   if(sortKey===k) sortDir=-sortDir; else {sortKey=k; sortDir=1;}
   render();
 }));
 [...document.querySelectorAll("#filters input,#filters select")].forEach(el=>el.addEventListener("input",render));
+const chromeEl=document.getElementById("chrome");
+function syncChrome(){document.documentElement.style.setProperty("--chrome-h",(chromeEl?chromeEl.offsetHeight:0)+"px");}
+if(chromeEl){syncChrome();new ResizeObserver(syncChrome).observe(chromeEl);}
 render();
 </script></body></html>"""
