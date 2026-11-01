@@ -166,8 +166,8 @@ function matches(l,f){
   return true;
 }
 const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function spark(h){
-  const ps=(h||[]).map(x=>x[1]).filter(p=>p!=null);
+function spark(hist){
+  const ps=(hist||[]).map(x=>x[1]).filter(p=>p!=null);
   if(ps.length<2) return '<span class="muted">—</span>';
   const w=64,h=20,p=2,mn=Math.min(...ps),mx=Math.max(...ps),r=(mx-mn)||1;
   const pt=(i,v)=>`${(i/(ps.length-1))*w},${h-p-((v-mn)/r)*(h-2*p)}`;
