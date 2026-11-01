@@ -111,20 +111,24 @@ HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 :root{interpolate-size:allow-keywords;scrollbar-gutter:stable;text-wrap:pretty;overflow-wrap:break-word;
   font-synthesis:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;color-scheme:light dark;
-  --bg:light-dark(oklch(.985 0 none),oklch(.155 0 none));
-  --surface:light-dark(oklch(1 0 none),oklch(.21 0 none));
-  --surface-2:light-dark(oklch(.975 0 none),oklch(.19 0 none));
-  --fg:light-dark(oklch(.22 0 none),oklch(.92 0 none));
-  --muted:light-dark(oklch(.52 0 none),oklch(.68 0 none));
-  --border:light-dark(oklch(.9 0 none),oklch(.3 0 none));
+  font-size:17px;
+  --bg:light-dark(oklch(.985 0 none),oklch(.15 0 none));
+  --surface:light-dark(oklch(1 0 none),oklch(.2 0 none));
+  --surface-2:light-dark(oklch(.975 0 none),oklch(.185 0 none));
+  --fg:light-dark(oklch(.22 0 none),oklch(.94 0 none));
+  --muted:light-dark(oklch(.5 0 none),oklch(.72 0 none));
+  --border:light-dark(oklch(.9 0 none),oklch(.32 0 none));
   --bargain:light-dark(oklch(.92 .11 90),oklch(.38 .09 90));
   --ok:light-dark(oklch(.9 .12 150),oklch(.35 .09 150));
   --no:light-dark(oklch(.9 .12 25),oklch(.4 .1 25));
   --warn:light-dark(oklch(.9 .13 60),oklch(.4 .1 60));
-  --link:light-dark(oklch(.52 .16 250),oklch(.72 .13 250));
+  --link:light-dark(oklch(.52 .16 250),oklch(.74 .13 250));
   --ease-out:cubic-bezier(.23,1,.32,1);
   --ease-in-out:cubic-bezier(.77,0,.175,1);
 }
+[data-theme="light"]{color-scheme:light}
+[data-theme="dark"]{color-scheme:dark}
+.hidden{display:none}
 body{margin:0;min-height:100svh;background:var(--bg);color:var(--fg);
   font:100%/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   text-rendering:optimizeLegibility}
@@ -135,35 +139,48 @@ input,textarea,select{font-size:max(16px,1rem);font-family:inherit}
 a{color:var(--link);text-decoration:none;transition:transform 160ms var(--ease-out)}
 a:active{transform:scale(.97)}
 .muted{color:var(--muted)}
-#chrome{position:sticky;top:0;z-index:20;padding-inline:1rem;padding-block:.7rem .6rem;
-  background:light-dark(oklch(.985 0 none/.82),oklch(.155 0 none/.82));
+#chrome{position:sticky;top:0;z-index:20;padding-inline:1rem;padding-block:.65rem .55rem;
+  background:light-dark(oklch(.985 0 none/.82),oklch(.15 0 none/.82));
   backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
   border-block-end:1px solid var(--border)}
-header{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;margin-block-end:.45rem}
-.legend{border:1px solid var(--border);border-radius:.6rem;background:var(--surface);padding:.45rem .7rem;margin-block-end:.6rem;font-size:.8rem;color:var(--muted)}
+header{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-block-end:.4rem}
+.grow{flex:1}
+.btn{font:inherit;font-size:.88rem;padding:.28rem .6rem;border:1px solid var(--border);border-radius:.45rem;background:var(--surface);color:var(--fg);cursor:pointer;transition:transform 160ms var(--ease-out)}
+.btn:active{transform:scale(.97)}
+.cols{position:relative}
+.cols>summary{cursor:pointer;user-select:none;font-size:.88rem;font-weight:600;color:var(--muted);list-style:none}
+.cols>summary::-webkit-details-marker{display:none}
+.cols-pop{position:absolute;inset-block-start:calc(100% + .4rem);inset-inline-end:0;background:var(--surface);border:1px solid var(--border);border-radius:.5rem;padding:.5rem .6rem;display:flex;flex-direction:column;gap:.3rem;box-shadow:0 6px 20px rgb(0 0 0/.16);z-index:40;min-inline-size:9.5rem}
+.cols-pop label{display:flex;align-items:center;gap:.45rem;font-size:.9rem;cursor:pointer;white-space:nowrap}
+.legend{border:1px solid var(--border);border-radius:.6rem;background:var(--surface);padding:.5rem .7rem;margin-block-end:.55rem;font-size:.88rem;color:var(--muted)}
 .legend summary{cursor:pointer;font-weight:600;color:var(--fg);user-select:none}
-.legend-items{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;align-items:center;padding-block-start:.4rem}
+.legend-items{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;align-items:center;padding-block-start:.45rem}
 .swatch{display:inline-block;inline-size:.8em;block-size:.8em;border-radius:.25em;vertical-align:-.06em}
-.tag{font-size:.78rem;padding:1px 7px;border-radius:999px;background:var(--border);white-space:nowrap;font-weight:600}
-.bargain{background:var(--bargain);color:light-dark(oklch(.32 .09 90),oklch(.95 .08 90))}
-.ok{background:var(--ok);color:light-dark(oklch(.3 .09 150),oklch(.95 .08 150))}
-.no{background:var(--no);color:light-dark(oklch(.35 .1 25),oklch(.95 .08 25))}
-.warn{background:var(--warn);color:light-dark(oklch(.35 .09 60),oklch(.95 .08 60))}
+.tag{font-size:.82rem;padding:2px 8px;border-radius:999px;background:var(--border);white-space:nowrap;font-weight:600}
+.bargain{background:var(--bargain);color:light-dark(oklch(.3 .09 90),oklch(.96 .08 90))}
+.ok{background:var(--ok);color:light-dark(oklch(.28 .09 150),oklch(.96 .08 150))}
+.no{background:var(--no);color:light-dark(oklch(.32 .1 25),oklch(.96 .08 25))}
+.warn{background:var(--warn);color:light-dark(oklch(.32 .09 60),oklch(.96 .08 60))}
 .warn-tip{position:relative;display:inline-block;cursor:help}
-.warn-tip::after{content:attr(data-tip);position:absolute;inset-block-end:125%;inset-inline-start:0;background:var(--fg);color:var(--bg);padding:.35rem .55rem;border-radius:.45rem;font-size:.74rem;font-weight:500;line-height:1.35;white-space:nowrap;opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity 150ms var(--ease-out),transform 150ms var(--ease-out);z-index:30;box-shadow:0 2px 10px rgb(0 0 0/.18)}
+.warn-tip::after{content:attr(data-tip);position:absolute;inset-block-end:125%;inset-inline-start:0;background:var(--fg);color:var(--bg);padding:.35rem .55rem;border-radius:.45rem;font-size:.8rem;font-weight:500;line-height:1.35;white-space:nowrap;opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity 150ms var(--ease-out),transform 150ms var(--ease-out);z-index:30;box-shadow:0 2px 10px rgb(0 0 0/.18)}
 .warn-tip:hover::after,.warn-tip:focus-visible::after{opacity:1;transform:translateY(0)}
 #filters{display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:flex-end}
-#filters label{display:flex;flex-direction:column;font-size:.72rem;color:var(--muted);gap:.2rem}
-#filters label span{flex-direction:row;align-items:center;gap:.35rem;font-size:.85rem;color:var(--fg)}
+#filters label{display:flex;flex-direction:column;font-size:.78rem;color:var(--muted);gap:.2rem}
+#filters label span{flex-direction:row;align-items:center;gap:.35rem;font-size:.9rem;color:var(--fg)}
 input,select{font:inherit;padding:.35rem .55rem;border:1px solid var(--border);border-radius:.45rem;background:var(--surface);color:var(--fg)}
 input:focus,select:focus{border-color:var(--link)}
 input[type=number]{inline-size:5.2rem}
 input[type=checkbox]{inline-size:1em;block-size:1em}
-#scatter{margin-inline:1rem;margin-block:.8rem;background:var(--surface);border:1px solid var(--border);border-radius:.6rem;padding:.6rem .7rem}
-#scatter h2{font-size:.8rem;font-weight:600;color:var(--muted);margin:0 0 .3rem}
+.chart{margin-inline:1rem;margin-block:.8rem;background:var(--surface);border:1px solid var(--border);border-radius:.6rem;padding:.55rem .7rem}
+.chart>summary{cursor:pointer;user-select:none;font-size:.88rem;font-weight:600;color:var(--muted)}
+.chart[open]>summary{margin-block-end:.45rem}
+#scatter svg{inline-size:100%;block-size:auto}
+#scatter svg text{fill:var(--muted);font-size:11px}
+#scatter svg line{stroke:var(--border)}
+#scatter svg line.axis{stroke:var(--muted)}
 table{border-collapse:collapse;inline-size:100%;background:var(--surface)}
 th,td{border-block-end:1px solid var(--border);padding:.5rem .6rem;text-align:start;vertical-align:middle}
-th{font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:var(--chrome-h,0);background:var(--surface);white-space:nowrap;z-index:10}
+th{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:var(--chrome-h,0);background:var(--surface);white-space:nowrap;z-index:10}
 th.sortable{cursor:pointer;user-select:none}
 th.sortable::after{content:"↕";opacity:.25;margin-inline-start:.35em}
 th.sortable.asc::after{content:"▲";opacity:1}
@@ -172,12 +189,12 @@ tbody tr:nth-child(even){background:var(--surface-2)}
 tbody tr{transition:background-color 150ms var(--ease-out)}
 td.num{text-align:end;font-variant-numeric:tabular-nums}
 .thumb{inline-size:64px;block-size:48px;aspect-ratio:4/3;object-fit:cover;border-radius:.45rem;background:var(--border);display:block}
-.seller{font-size:.8rem}.seller .muted{color:var(--muted)}
+.seller{font-size:.9rem}.seller .muted{color:var(--muted)}
 .empty{text-align:center;padding:3rem 1rem;color:var(--muted)}
 .empty b{display:block;font-size:1.1rem;color:var(--fg);margin-block-end:.3rem}
 @media (hover:hover) and (pointer:fine){
   a:hover{text-decoration:underline}
-  tbody tr:hover{background:light-dark(oklch(.965 0 none),oklch(.24 0 none))}
+  tbody tr:hover{background:light-dark(oklch(.965 0 none),oklch(.25 0 none))}
 }
 @media (prefers-reduced-motion:reduce){
   a{transition:none}a:active{transform:none}tbody tr{transition:none}.warn-tip::after{transition:none}
@@ -187,7 +204,26 @@ td.num{text-align:end;font-variant-numeric:tabular-nums}
 }
 </style></head><body>
 <div id="chrome">
-  <header><h1>Wallapop tracker</h1><span class="muted" id="count"></span></header>
+  <header>
+    <h1>Wallapop tracker</h1>
+    <span class="muted" id="count"></span>
+    <span class="grow"></span>
+    <details class="cols" id="cols">
+      <summary>Columns</summary>
+      <div class="cols-pop">
+        <label><input type="checkbox" data-col="thumb" checked> image</label>
+        <label><input type="checkbox" data-col="price" checked> price</label>
+        <label><input type="checkbox" data-col="target" checked> target</label>
+        <label><input type="checkbox" data-col="metric" checked> €/unit</label>
+        <label><input type="checkbox" data-col="condition" checked> condition</label>
+        <label><input type="checkbox" data-col="compat" checked> compat</label>
+        <label><input type="checkbox" data-col="seller" checked> seller</label>
+        <label><input type="checkbox" data-col="history" checked> history</label>
+        <label><input type="checkbox" data-col="seen" checked> seen</label>
+      </div>
+    </details>
+    <button id="theme" class="btn" type="button" title="Cycle theme: auto / light / dark">Auto</button>
+  </header>
   <details class="legend">
     <summary>Legend</summary>
     <div class="legend-items">
@@ -211,9 +247,13 @@ td.num{text-align:end;font-variant-numeric:tabular-nums}
     <label><span><input type="checkbox" id="dropped"> dropped</span></label>
   </form>
 </div>
-<div id="scatter"></div>
-<table><thead><tr><th></th><th class="sortable" data-sort="title">title</th><th class="num sortable" data-sort="price">price</th><th class="sortable" data-sort="target">target</th>
-<th class="num sortable" data-sort="metric">€/unit</th><th class="sortable" data-sort="condition">condition</th><th>compat</th><th class="sortable" data-sort="seller">seller</th><th>history</th><th>seen</th></tr></thead>
+<details class="chart" id="chart">
+  <summary>Chart — price vs €/unit</summary>
+  <div id="scatter"></div>
+</details>
+<table><thead><tr>
+  <th data-col="thumb"></th><th class="sortable" data-sort="title">title</th><th class="num sortable" data-sort="price" data-col="price">price</th><th class="sortable" data-sort="target" data-col="target">target</th>
+  <th class="num sortable" data-sort="metric" data-col="metric">€/unit</th><th class="sortable" data-sort="condition" data-col="condition">condition</th><th data-col="compat">compat</th><th class="sortable" data-sort="seller" data-col="seller">seller</th><th data-col="history">history</th><th data-col="seen">seen</th></tr></thead>
 <tbody id="rows"></tbody></table>
 <script>
 const DATA = __DATA__;
@@ -247,6 +287,12 @@ function spark(hist){
   const last=ps[ps.length-1], c=last<ps[0]?"#1a9a4a":"#d13737";
   return `<svg width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.5"/><circle cx="${w}" cy="${h-p-((last-mn)/r)*(h-2*p)}" r="1.6" fill="${c}"/></svg>`;
 }
+function risk(l){
+  const s=l.seller;
+  if(!s) return 1;
+  const bad=(s.reviews==null||s.reviews<3)||(s.rating==null||s.rating<4)||!s.verified||(s.age!=null&&s.age<1);
+  return bad?0:2;
+}
 function seller(l){
   const s=l.seller;
   if(!s) return '<span class="muted">—</span>';
@@ -262,38 +308,39 @@ function seller(l){
   return `<span class="seller">${tip}${esc(s.name)} <span class="muted">${stars}★ · ${s.reviews??0}rv${s.verified?' · ✓':''}${s.age!=null?' · '+s.age+'y':''}</span></span>`;
 }
 const tag=(t,c)=>t==null||t===''?'':`<span class="tag ${c||''}">${esc(t)}</span>`;
+const cell=(c,h,cls="")=>`<td data-col="${c}" class="${[cls,hiddenCols.has(c)?"hidden":""].filter(Boolean).join(" ")}">${h}</td>`;
 function row(l){
   const img = l.thumb ? `<img class="thumb" src="${esc(l.thumb)}" loading="lazy">` : '';
   const metric = l.metric==null ? '' : l.metric.toFixed(1);
   return `<tr>
-    <td>${img}</td>
+    ${cell("thumb", img)}
     <td><a href="${esc(l.url)}" target="_blank">${esc(l.title)}</a> ${tag(l.bargain?"bargain":"","bargain")}</td>
-    <td class="num">${eur(l.price)}</td>
-    <td>${esc(l.target)}</td>
-    <td class="num">${metric}</td>
-    <td>${tag(l.condition||"")}</td>
-    <td>${l.compatible===true?tag("ok","ok"):l.compatible===false?tag("no","no"):tag("?","")}</td>
-    <td>${seller(l)}</td>
-    <td>${spark(l.hist)}</td>
-    <td class="muted">${l.new_today?"new":l.price_dropped?"dropped":"·"}</td></tr>`;
+    ${cell("price", eur(l.price), "num")}
+    ${cell("target", esc(l.target))}
+    ${cell("metric", metric, "num")}
+    ${cell("condition", tag(l.condition||""))}
+    ${cell("compat", l.compatible===true?tag("ok","ok"):l.compatible===false?tag("no","no"):tag("?",""))}
+    ${cell("seller", seller(l))}
+    ${cell("history", spark(l.hist))}
+    ${cell("seen", l.new_today?"new":l.price_dropped?"dropped":"·", "muted")}</tr>`;
 }
 function scatter(list){
   const pts=list.filter(l=>l.metric!=null&&l.price!=null);
   const box=$("scatter");
-  if(!pts.length){box.innerHTML="";return;}
+  if(!pts.length){box.innerHTML='<span class="muted">no €/unit data to plot</span>';return;}
   const W=640,H=240,pl=44,pr=12,pt=10,pb=28;
   const xmax=Math.max(...pts.map(p=>p.price))*1.05||1, ymax=Math.max(...pts.map(p=>p.metric))*1.1||1;
   const X=p=>pl+(p/xmax)*(W-pl-pr), Y=p=>H-pb-(p/ymax)*(H-pt-pb);
-  const grid=(()=>{let g="";for(let i=1;i<4;i++){g+=`<line x1="${pl+(W-pl-pr)*i/4}" y1="${pt}" x2="${pl+(W-pl-pr)*i/4}" y2="${H-pb}" stroke="var(--border)"/>`;}for(let i=1;i<4;i++){g+=`<line x1="${pl}" y1="${pt+(H-pt-pb)*i/4}" x2="${W-pr}" y2="${pt+(H-pt-pb)*i/4}" stroke="var(--border)"/>`;}return g;})();
+  const grid=(()=>{let g="";for(let i=1;i<4;i++){g+=`<line x1="${pl+(W-pl-pr)*i/4}" y1="${pt}" x2="${pl+(W-pl-pr)*i/4}" y2="${H-pb}"/>`;}for(let i=1;i<4;i++){g+=`<line x1="${pl}" y1="${pt+(H-pt-pb)*i/4}" x2="${W-pr}" y2="${pt+(H-pt-pb)*i/4}"/>`;}return g;})();
   const dots=pts.map(p=>{const c=p.bargain?"#e8a400":"#4a7fd0";
     return `<circle cx="${X(p.price)}" cy="${Y(p.metric)}" r="5" fill="${c}"><title>${esc(p.title)} — €${p.price}, ${p.metric.toFixed(1)}/u</title></circle>`;}).join("");
-  box.innerHTML=`<h2>price vs €/unit</h2><svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
     ${grid}
-    <line x1="${pl}" y1="${H-pb}" x2="${W-pr}" y2="${H-pb}" stroke="#888"/>
-    <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${H-pb}" stroke="#888"/>
-    <text x="${pl}" y="${H-10}" font-size="11">€0</text>
-    <text x="${W-pr-40}" y="${H-10}" font-size="11">€${xmax.toFixed(0)}</text>
-    <text x="2" y="${pt+10}" font-size="11">€${ymax.toFixed(0)}/u</text>${dots}</svg>`;
+    <line class="axis" x1="${pl}" y1="${H-pb}" x2="${W-pr}" y2="${H-pb}"/>
+    <line class="axis" x1="${pl}" y1="${pt}" x2="${pl}" y2="${H-pb}"/>
+    <text x="${pl}" y="${H-10}">€0</text>
+    <text x="${W-pr-42}" y="${H-10}">€${xmax.toFixed(0)}</text>
+    <text x="2" y="${pt+10}">€${ymax.toFixed(0)}/u</text>${dots}</svg>`;
 }
 let sortKey=null, sortDir=1;
 function val(l,k){
@@ -311,6 +358,8 @@ function render(){
   if(sortKey){
     const k=sortKey;
     list=[...list].sort((a,b)=>{const va=val(a,k),vb=val(b,k);return va===vb?0:(va<vb?-1:1)*sortDir;});
+  }else{
+    list=[...list].sort((a,b)=>{const ra=risk(a),rb=risk(b);if(ra!==rb)return ra-rb;return (a.price??Infinity)-(b.price??Infinity);});
   }
   $("rows").innerHTML=list.length?list.map(row).join(""):'<tr><td colspan="10"><div class="empty"><b>No listings match</b>Try clearing or loosening the filters.</div></td></tr>';
   $("count").textContent=`${list.length} of ${DATA.length} listings`;
@@ -320,12 +369,36 @@ function render(){
     th.classList.toggle("desc", th.dataset.sort===sortKey && sortDir===-1);
   });
 }
+const hiddenCols = new Set(JSON.parse(localStorage.getItem("wpt-cols")||"[]"));
+document.querySelectorAll("[data-col]").forEach(cb=>{ if(cb.type==="checkbox") cb.checked=!hiddenCols.has(cb.dataset.col); });
+document.querySelectorAll(".cols-pop input[data-col]").forEach(cb=>cb.addEventListener("change",()=>{
+  if(cb.checked) hiddenCols.delete(cb.dataset.col); else hiddenCols.add(cb.dataset.col);
+  localStorage.setItem("wpt-cols", JSON.stringify([...hiddenCols]));
+  document.querySelectorAll("th[data-col]").forEach(th=>th.classList.toggle("hidden", hiddenCols.has(th.dataset.col)));
+  render();
+}));
 document.querySelectorAll("th[data-sort]").forEach(th=>th.addEventListener("click",()=>{
   const k=th.dataset.sort;
-  if(sortKey===k) sortDir=-sortDir; else {sortKey=k; sortDir=1;}
+  if(sortKey===k){ if(sortDir===1) sortDir=-1; else {sortKey=null; sortDir=1;} } else {sortKey=k; sortDir=1;}
   render();
 }));
 [...document.querySelectorAll("#filters input,#filters select")].forEach(el=>el.addEventListener("input",render));
+const THEME="wpt-theme";
+const themeBtn=$("theme");
+const themeLabel={system:"Auto",light:"Light",dark:"Dark"};
+function applyTheme(m){
+  if(m==="light") document.documentElement.dataset.theme="light";
+  else if(m==="dark") document.documentElement.dataset.theme="dark";
+  else delete document.documentElement.dataset.theme;
+  themeBtn.textContent=themeLabel[m];
+  localStorage.setItem(THEME,m);
+}
+let themeMode=localStorage.getItem(THEME)||"system";
+applyTheme(themeMode);
+themeBtn.addEventListener("click",()=>{
+  themeMode = themeMode==="system"?"light":themeMode==="light"?"dark":"system";
+  applyTheme(themeMode);
+});
 const chromeEl=document.getElementById("chrome");
 function syncChrome(){document.documentElement.style.setProperty("--chrome-h",(chromeEl?chromeEl.offsetHeight:0)+"px");}
 if(chromeEl){syncChrome();new ResizeObserver(syncChrome).observe(chromeEl);}
