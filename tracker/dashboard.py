@@ -149,6 +149,10 @@ input[type=number]{inline-size:5rem}
 table{border-collapse:collapse;inline-size:100%;background:var(--surface)}
 th,td{border-block-end:1px solid var(--border);padding:.45rem .55rem;text-align:start;vertical-align:middle}
 th{font-size:.72rem;color:var(--muted);position:sticky;inset-block-start:0;background:var(--surface);white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable::after{content:"↕";opacity:.25;margin-inline-start:.35em}
+th.sortable.asc::after{content:"▲";opacity:1}
+th.sortable.desc::after{content:"▼";opacity:1}
 td.num{text-align:end;font-variant-numeric:tabular-nums}
 .thumb{inline-size:64px;block-size:48px;aspect-ratio:4/3;object-fit:cover;border-radius:.4rem;background:var(--border);display:block}
 .seller{font-size:.8rem}.seller .muted{color:var(--muted)}
@@ -185,8 +189,8 @@ tbody tr{transition:background-color 150ms var(--ease-out)}
   <label><span><input type="checkbox" id="dropped"> dropped</span></label>
 </form>
 <div id="scatter"></div>
-<table><thead><tr><th></th><th>title</th><th class="num">price</th><th>target</th>
-<th class="num">€/unit</th><th>condition</th><th>compat</th><th>seller</th><th>history</th><th>seen</th></tr></thead>
+<table><thead><tr><th></th><th class="sortable" data-sort="title">title</th><th class="num sortable" data-sort="price">price</th><th class="sortable" data-sort="target">target</th>
+<th class="num sortable" data-sort="metric">€/unit</th><th class="sortable" data-sort="condition">condition</th><th>compat</th><th class="sortable" data-sort="seller">seller</th><th>history</th><th>seen</th></tr></thead>
 <tbody id="rows"></tbody></table>
 <script>
 const DATA = __DATA__;
@@ -258,11 +262,35 @@ function scatter(list){
     <text x="2" y="${pt+4}" font-size="11">€${ymax.toFixed(0)}/u</text>${dots}</svg>`;
 }
 function render(){
-  const f=state(), list=DATA.filter(l=>matches(l,f));
-  $("rows").innerHTML=list.map(row).join("");
+  const f=state();
+  let list=DATA.filter(l=>matches(l,f));
+  if(sortKey){
+    const k=sortKey;
+    list=[...list].sort((a,b)=>{const va=val(a,k),vb=val(b,k);return va===vb?0:(va<vb?-1:1)*sortDir;});
+  }
+  $("rows").innerHTML=list.length?list.map(row).join(""):'<tr><td colspan="10" class="muted">no listings match</td></tr>';
   $("count").textContent=`${list.length} of ${DATA.length} listings`;
   scatter(list);
+  document.querySelectorAll("th[data-sort]").forEach(th=>{
+    th.classList.toggle("asc", th.dataset.sort===sortKey && sortDir===1);
+    th.classList.toggle("desc", th.dataset.sort===sortKey && sortDir===-1);
+  });
 }
+let sortKey=null, sortDir=1;
+function val(l,k){
+  if(k==="price") return l.price ?? -Infinity;
+  if(k==="metric") return l.metric ?? -Infinity;
+  if(k==="seller") return l.seller ? (l.seller.rating ?? -Infinity) : -Infinity;
+  if(k==="title") return (l.title||"").toLowerCase();
+  if(k==="target") return l.target||"";
+  if(k==="condition") return l.condition||"";
+  return "";
+}
+document.querySelectorAll("th[data-sort]").forEach(th=>th.addEventListener("click",()=>{
+  const k=th.dataset.sort;
+  if(sortKey===k) sortDir=-sortDir; else {sortKey=k; sortDir=1;}
+  render();
+}));
 [...document.querySelectorAll("#filters input,#filters select")].forEach(el=>el.addEventListener("input",render));
 render();
 </script></body></html>"""
