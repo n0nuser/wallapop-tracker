@@ -1,2 +1,0 @@
-[console_scripts]
-tracker = tracker.__main__:main

@@ -13,3 +13,6 @@ images/
 # Personal, local-only (your own targets, research and captured data — not part of the app):
 targets.toml
 docs/research/
+
+# Build artifacts
+*.egg-info/
