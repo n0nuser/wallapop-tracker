@@ -121,13 +121,16 @@ HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   --no:light-dark(oklch(.9 .12 25),oklch(.4 .1 25));
   --warn:light-dark(oklch(.9 .13 60),oklch(.4 .1 60));
   --link:light-dark(oklch(.52 .16 250),oklch(.72 .13 250));
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ease-in-out:cubic-bezier(.77,0,.175,1);
 }
 body{margin:0;min-height:100svh;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding-inline:1rem;padding-block-end:3rem}
 h1{font-size:1.1rem;margin:0;text-wrap:balance}
 img,svg,video{display:block;max-width:100%;height:auto}
 input,textarea,select{font-size:max(16px,1rem)}
 :focus-visible{outline:max(2px,.08em) solid currentColor;outline-offset:.25em}
-a{color:var(--link);text-decoration:none}
+a{color:var(--link);text-decoration:none;transition:transform 160ms var(--ease-out)}
+a:active{transform:scale(.97)}
 header{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;padding-block:1rem .5rem}
 .muted{color:var(--muted)}
 .legend{display:flex;flex-wrap:wrap;gap:.6rem 1.25rem;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:.6rem;padding:.6rem .8rem;margin-block:0 .75rem;font-size:.82rem;color:var(--muted)}
@@ -150,7 +153,16 @@ td.num{text-align:end;font-variant-numeric:tabular-nums}
 .thumb{inline-size:64px;block-size:48px;aspect-ratio:4/3;object-fit:cover;border-radius:.4rem;background:var(--border);display:block}
 .seller{font-size:.8rem}.seller .muted{color:var(--muted)}
 #scatter{margin-block-end:1rem;background:var(--surface);border:1px solid var(--border);padding:.6rem}
-@media (hover:hover){a:hover{text-decoration:underline}}
+tbody tr{transition:background-color 150ms var(--ease-out)}
+@media (hover:hover) and (pointer:fine){
+  a:hover{text-decoration:underline}
+  tbody tr:hover{background:light-dark(oklch(.97 0 none),oklch(.24 0 none))}
+}
+@media (prefers-reduced-motion:reduce){
+  a{transition:none}
+  a:active{transform:none}
+  tbody tr{transition:none}
+}
 </style></head><body>
 <header><h1>Wallapop tracker</h1><span class="muted" id="count"></span></header>
 <div class="legend"><b>Legend</b>
