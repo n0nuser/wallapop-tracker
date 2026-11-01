@@ -63,7 +63,6 @@ def generate(db="tracker.db", targets="targets.toml", out="dashboard.html", imag
     collector._migrate(con)
     listings = _rows(con)
 
-    # bargain + metric per target
     metric_of, bargain_ids, lowball = {}, set(), {}
     for name, tcfg in cfg.get("targets", {}).items():
         rows = score.active_listings(con, name)
@@ -86,7 +85,6 @@ def generate(db="tracker.db", targets="targets.toml", out="dashboard.html", imag
         local = imgdir / f"{l['id']}.jpg"
         l["thumb"] = str(local) if local.exists() else (l["images"][0] if l["images"] else None)
 
-    # metric values (a target's derived field, e.g. eur_per_tb) from specs
     con = sqlite3.connect(db)
     specs_map = {r[0]: json.loads(r[1] or "{}") for r in con.execute("SELECT id, specs FROM listing")}
     con.close()
@@ -94,42 +92,74 @@ def generate(db="tracker.db", targets="targets.toml", out="dashboard.html", imag
         m = metric_of.get(l["target"])
         l["metric"] = specs_map[l["id"]].get(m) if m else None
 
-    html = _render(listings, targets_, metric_of)
+    html = _render(listings, targets_)
     Path(out).write_text(html)
     return len(listings)
 
 
-def _render(listings, targets, metric_of):
+def _render(listings, targets):
     data = json.dumps(listings, ensure_ascii=False)
     target_opts = "".join(f"<option>{t}</option>" for t in targets)
     return HTML.replace("__DATA__", data).replace("__TARGETS__", target_opts)
 
 
 HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Wallapop tracker</title><style>
- body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:16px;background:#f6f6f4;color:#1a1a1a}
- header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
- h1{font-size:18px;margin:0}
- #filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:14px 0;background:#fff;border:1px solid #eee;padding:10px;border-radius:8px}
- #filters label{display:flex;flex-direction:column;font-size:11px;color:#555;gap:2px}
- input,select{font:inherit;padding:5px 7px;border:1px solid #ccc;border-radius:5px;background:#fff}
- input[type=number]{width:70px}
- table{border-collapse:collapse;width:100%;background:#fff}
- th,td{border-bottom:1px solid #eee;padding:7px 9px;text-align:left;vertical-align:middle}
- th{font-size:11px;color:#555;position:sticky;top:0;background:#fff;white-space:nowrap}
- td.num{text-align:right;font-variant-numeric:tabular-nums}
- .thumb{width:64px;height:48px;object-fit:cover;border-radius:5px;background:#eee;display:block}
- .tag{font-size:11px;padding:1px 7px;border-radius:8px;background:#e8e8e4;white-space:nowrap}
- .bargain{background:#fff0c2}.ok{background:#d6f5d6}.no{background:#fdd}.warn{background:#ffe0c2}
- a{color:#0b57d0;text-decoration:none}
- .seller{font-size:12px;color:#333}.seller .muted{color:#999}
- .warn{font-weight:600}
- .muted{color:#999}
- #scatter{margin:12px 0;background:#fff;border:1px solid #eee;padding:8px}
+*,*::before,*::after{box-sizing:border-box;min-width:0}
+:root{interpolate-size:allow-keywords;scrollbar-gutter:stable;text-wrap:pretty;overflow-wrap:break-word;
+  font-synthesis:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;color-scheme:light dark;
+  --bg:light-dark(oklch(.985 0 none),oklch(.16 0 none));
+  --surface:light-dark(oklch(1 0 none),oklch(.21 0 none));
+  --fg:light-dark(oklch(.22 0 none),oklch(.92 0 none));
+  --muted:light-dark(oklch(.52 0 none),oklch(.68 0 none));
+  --border:light-dark(oklch(.9 0 none),oklch(.3 0 none));
+  --bargain:light-dark(oklch(.92 .11 90),oklch(.38 .09 90));
+  --ok:light-dark(oklch(.9 .12 150),oklch(.35 .09 150));
+  --no:light-dark(oklch(.9 .12 25),oklch(.4 .1 25));
+  --warn:light-dark(oklch(.9 .13 60),oklch(.4 .1 60));
+  --link:light-dark(oklch(.52 .16 250),oklch(.72 .13 250));
+}
+body{margin:0;min-height:100svh;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding-inline:1rem;padding-block-end:3rem}
+h1{font-size:1.1rem;margin:0;text-wrap:balance}
+img,svg,video{display:block;max-width:100%;height:auto}
+input,textarea,select{font-size:max(16px,1rem)}
+:focus-visible{outline:max(2px,.08em) solid currentColor;outline-offset:.25em}
+a{color:var(--link);text-decoration:none}
+header{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;padding-block:1rem .5rem}
+.muted{color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:.6rem 1.25rem;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:.6rem;padding:.6rem .8rem;margin-block:0 .75rem;font-size:.82rem;color:var(--muted)}
+.legend b{color:var(--fg);font-weight:600}
+.swatch{display:inline-block;inline-size:.8em;block-size:.8em;border-radius:.25em;vertical-align:-.06em}
+.tag{font-size:.78rem;padding:1px 7px;border-radius:999px;background:var(--border);white-space:nowrap;font-weight:600}
+.bargain{background:var(--bargain);color:light-dark(oklch(.32 .09 90),oklch(.95 .08 90))}
+.ok{background:var(--ok);color:light-dark(oklch(.3 .09 150),oklch(.95 .08 150))}
+.no{background:var(--no);color:light-dark(oklch(.35 .1 25),oklch(.95 .08 25))}
+.warn{background:var(--warn);color:light-dark(oklch(.35 .09 60),oklch(.95 .08 60))}
+#filters{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:flex-end;background:var(--surface);border:1px solid var(--border);padding:.7rem .9rem;border-radius:.6rem;margin-block-end:1rem}
+#filters label{display:flex;flex-direction:column;font-size:.78rem;color:var(--muted);gap:.2rem}
+#filters label span{flex-direction:row;align-items:center;gap:.35rem;font-size:.85rem;color:var(--fg)}
+input,select{font:inherit;padding:.35rem .5rem;border:1px solid var(--border);border-radius:.4rem;background:var(--surface);color:var(--fg)}
+input[type=number]{inline-size:5rem}
+table{border-collapse:collapse;inline-size:100%;background:var(--surface)}
+th,td{border-block-end:1px solid var(--border);padding:.45rem .55rem;text-align:start;vertical-align:middle}
+th{font-size:.72rem;color:var(--muted);position:sticky;inset-block-start:0;background:var(--surface);white-space:nowrap}
+td.num{text-align:end;font-variant-numeric:tabular-nums}
+.thumb{inline-size:64px;block-size:48px;aspect-ratio:4/3;object-fit:cover;border-radius:.4rem;background:var(--border);display:block}
+.seller{font-size:.8rem}.seller .muted{color:var(--muted)}
+#scatter{margin-block-end:1rem;background:var(--surface);border:1px solid var(--border);padding:.6rem}
+@media (hover:hover){a:hover{text-decoration:underline}}
 </style></head><body>
-<header><h1>Wallapop tracker</h1><span class="muted" id="count"></span>
-<span class="muted">· image cache / data from the last run</span></header>
+<header><h1>Wallapop tracker</h1><span class="muted" id="count"></span></header>
+<div class="legend"><b>Legend</b>
+  <span><span class="tag bargain">bargain</span> under the target threshold</span>
+  <span><span class="tag ok">ok</span> / <span class="tag no">no</span> compatible with your radio</span>
+  <span><span class="tag warn">⚠ seller</span> risky: new account, no/few reviews, unverified, low rating</span>
+  <span><span class="swatch" style="background:light-dark(oklch(.5 .15 150),oklch(.6 .15 150))"></span> price ↓ / <span class="swatch" style="background:light-dark(oklch(.5 .15 25),oklch(.6 .15 25))"></span> price ↑</span>
+  <span><span class="swatch" style="background:light-dark(oklch(.7 .15 85),oklch(.65 .14 85))"></span> bargain / <span class="swatch" style="background:light-dark(oklch(.55 .15 250),oklch(.6 .13 250))"></span> not, in the chart</span>
+</div>
 <form id="filters" onsubmit="return false">
   <label>target<select id="target"><option value="">all</option>__TARGETS__</select></label>
   <label>text<input id="text" placeholder="title / brand / model"></label>
@@ -138,6 +168,7 @@ HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   <label>€/unit ≤<input id="umax" type="number" min="0" step="0.1"></label>
   <label>min rating<input id="rmin" type="number" min="0" max="5" step="0.1" value="0"></label>
   <label><span><input type="checkbox" id="bargain"> bargain</span></label>
+  <label><span><input type="checkbox" id="relevant" checked> relevant only</span></label>
   <label><span><input type="checkbox" id="newtoday"> new</span></label>
   <label><span><input type="checkbox" id="dropped"> dropped</span></label>
 </form>
@@ -150,7 +181,7 @@ const DATA = __DATA__;
 const $ = id => document.getElementById(id);
 const state = () => ({target:$("target").value, text:$("text").value.trim().toLowerCase(),
   compat:$("compat").value, pmax:$("pmax").value, umax:$("umax").value, rmin:$("rmin").value,
-  bargain:$("bargain").checked, newtoday:$("newtoday").checked, dropped:$("dropped").checked});
+  bargain:$("bargain").checked, relevant:$("relevant").checked, newtoday:$("newtoday").checked, dropped:$("dropped").checked});
 function matches(l,f){
   if(f.target && l.target!==f.target) return false;
   const t=(l.title+" "+(l.brand||"")+" "+(l.model||"")).toLowerCase();
@@ -161,6 +192,7 @@ function matches(l,f){
   if(f.umax!=="" && (l.metric==null || l.metric>+f.umax)) return false;
   if(f.rmin!=="" && (l.seller==null || l.seller.rating==null || l.seller.rating<+f.rmin)) return false;
   if(f.bargain && !l.bargain) return false;
+  if(f.relevant && l.relevant===false) return false;
   if(f.newtoday && !l.new_today) return false;
   if(f.dropped && !l.price_dropped) return false;
   return true;
@@ -172,7 +204,7 @@ function spark(hist){
   const w=64,h=20,p=2,mn=Math.min(...ps),mx=Math.max(...ps),r=(mx-mn)||1;
   const pt=(i,v)=>`${(i/(ps.length-1))*w},${h-p-((v-mn)/r)*(h-2*p)}`;
   const pts=ps.map((v,i)=>pt(i,v)).join(" ");
-  const last=ps[ps.length-1], c=last<ps[0]?"#1a7f1a":"#c00";
+  const last=ps[ps.length-1], c=last<ps[0]?"#1a9a4a":"#d13737";
   return `<svg width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.5"/><circle cx="${w}" cy="${h-p-((last-mn)/r)*(h-2*p)}" r="1.6" fill="${c}"/></svg>`;
 }
 function seller(l){
@@ -180,7 +212,7 @@ function seller(l){
   if(!s) return '<span class="muted">—</span>';
   const bad = (s.reviews==null||s.reviews<3) || (s.rating==null||s.rating<4) || !s.verified || (s.age!=null&&s.age<1);
   const stars = s.rating==null ? "?" : s.rating.toFixed(1);
-  return `<span class="seller ${bad?'warn':''}">${bad?'⚠ ':''}${esc(s.name)} <span class="muted">${stars}★ · ${s.reviews??0}rv${s.verified?' · ✓':''}${s.age!=null?' · '+s.age+'y':''}</span></span>`;
+  return `<span class="seller">${bad?'<span class="tag warn">⚠</span> ':''}${esc(s.name)} <span class="muted">${stars}★ · ${s.reviews??0}rv${s.verified?' · ✓':''}${s.age!=null?' · '+s.age+'y':''}</span></span>`;
 }
 const tag=(t,c)=>t==null?'':`<span class="tag ${c||''}">${esc(t)}</span>`;
 function row(l){
@@ -204,11 +236,11 @@ function scatter(list){
   if(!pts.length){$("scatter").innerHTML="";return;}
   const xmax=Math.max(...pts.map(p=>p.price))*1.05||1, ymax=Math.max(...pts.map(p=>p.metric))*1.1||1;
   const X=p=>pl+(p/xmax)*(W-pl-pr), Y=p=>H-pb-(p/ymax)*(H-pt-pb);
-  const dots=pts.map(p=>{const c=p.bargain?"#f0a500":"#4a7fd0";
+  const dots=pts.map(p=>{const c=p.bargain?"#e8a400":"#4a7fd0";
     return `<circle cx="${X(p.price)}" cy="${Y(p.metric)}" r="5" fill="${c}"><title>${esc(p.title)} — €${p.price}, ${p.metric.toFixed(1)}/u</title></circle>`;}).join("");
   $("scatter").innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-    <line x1="${pl}" y1="${H-pb}" x2="${W-pr}" y2="${H-pb}" stroke="#ccc"/>
-    <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${H-pb}" stroke="#ccc"/>
+    <line x1="${pl}" y1="${H-pb}" x2="${W-pr}" y2="${H-pb}" stroke="#888"/>
+    <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${H-pb}" stroke="#888"/>
     <text x="${pl}" y="${H-8}" font-size="11">€0</text>
     <text x="${W-pr-30}" y="${H-8}" font-size="11">€${xmax.toFixed(0)}</text>
     <text x="2" y="${pt+4}" font-size="11">€${ymax.toFixed(0)}/u</text>${dots}</svg>`;
