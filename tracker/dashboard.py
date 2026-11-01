@@ -141,6 +141,9 @@ header{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;padding-block
 .ok{background:var(--ok);color:light-dark(oklch(.3 .09 150),oklch(.95 .08 150))}
 .no{background:var(--no);color:light-dark(oklch(.35 .1 25),oklch(.95 .08 25))}
 .warn{background:var(--warn);color:light-dark(oklch(.35 .09 60),oklch(.95 .08 60))}
+.warn-tip{position:relative;display:inline-block;cursor:help}
+.warn-tip::after{content:attr(data-tip);position:absolute;inset-block-end:125%;inset-inline-start:0;background:var(--fg);color:var(--bg);padding:.35rem .55rem;border-radius:.45rem;font-size:.74rem;font-weight:500;line-height:1.35;white-space:nowrap;opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity 150ms var(--ease-out),transform 150ms var(--ease-out);z-index:30;box-shadow:0 2px 10px rgb(0 0 0/.18)}
+.warn-tip:hover::after,.warn-tip:focus-visible::after{opacity:1;transform:translateY(0)}
 #filters{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:flex-end;background:var(--surface);border:1px solid var(--border);padding:.7rem .9rem;border-radius:.6rem;margin-block-end:1rem}
 #filters label{display:flex;flex-direction:column;font-size:.78rem;color:var(--muted);gap:.2rem}
 #filters label span{flex-direction:row;align-items:center;gap:.35rem;font-size:.85rem;color:var(--fg)}
@@ -226,13 +229,20 @@ function spark(hist){
 function seller(l){
   const s=l.seller;
   if(!s) return '<span class="muted">—</span>';
-  const bad = (s.reviews==null||s.reviews<3) || (s.rating==null||s.rating<4) || !s.verified || (s.age!=null&&s.age<1);
+  const reasons=[];
+  if(s.reviews==null) reasons.push("no reviews");
+  else if(s.reviews<3) reasons.push("only "+s.reviews+" review"+(s.reviews===1?"":"s"));
+  if(s.rating==null) reasons.push("no rating");
+  else if(s.rating<4) reasons.push("rating "+s.rating.toFixed(1));
+  if(!s.verified) reasons.push("unverified");
+  if(s.age!=null && s.age<1) reasons.push("new account ("+s.age+"y)");
   const stars = s.rating==null ? "?" : s.rating.toFixed(1);
-  return `<span class="seller">${bad?'<span class="tag warn">⚠</span> ':''}${esc(s.name)} <span class="muted">${stars}★ · ${s.reviews??0}rv${s.verified?' · ✓':''}${s.age!=null?' · '+s.age+'y':''}</span></span>`;
+  const tip = reasons.length ? `<span class="tag warn warn-tip" data-tip="${esc(reasons.join(" · "))}" aria-label="risky seller: ${esc(reasons.join(", "))}">⚠</span> ` : "";
+  return `<span class="seller">${tip}${esc(s.name)} <span class="muted">${stars}★ · ${s.reviews??0}rv${s.verified?' · ✓':''}${s.age!=null?' · '+s.age+'y':''}</span></span>`;
 }
-const tag=(t,c)=>t==null?'':`<span class="tag ${c||''}">${esc(t)}</span>`;
+const tag=(t,c)=>t==null||t===''?'':`<span class="tag ${c||''}">${esc(t)}</span>`;
 function row(l){
-  const img = l.thumb ? `<img class="thumb" src="${esc(l.thumb)}" loading="lazy">` : '<span class="thumb"></span>';
+  const img = l.thumb ? `<img class="thumb" src="${esc(l.thumb)}" loading="lazy">` : '';
   const metric = l.metric==null ? '' : l.metric.toFixed(1);
   return `<tr>
     <td>${img}</td>
