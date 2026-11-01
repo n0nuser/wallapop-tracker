@@ -2,6 +2,13 @@
 __pycache__/
 .venv/
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Generated artifacts (build with `tracker dashboard` / `tracker images`):
+dashboard.html
+images/
 
 # Personal, local-only (your own targets, research and captured data — not part of the app):
 targets.toml
