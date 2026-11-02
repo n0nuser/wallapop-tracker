@@ -144,6 +144,19 @@ class Store(unittest.TestCase):
         self.go(r("r3"), "2026-11-01T10:00:00.000+00:00", detail=1)
         self.assertEqual(self.status(b), "removed")
 
+    def test_insert_on_migrated_schema_puts_images_in_images(self):
+        # a DB migrated by ALTER TABLE has images AFTER last_checked; the INSERT must not be positional
+        con = sqlite3.connect(self.db)
+        con.execute("CREATE TABLE listing (id TEXT PRIMARY KEY, target TEXT NOT NULL, title TEXT NOT NULL, description TEXT,"
+                    " url TEXT NOT NULL, first_seen TEXT NOT NULL, last_seen TEXT NOT NULL, created_at INTEGER, price_eur REAL,"
+                    " status TEXT NOT NULL, seller_id TEXT, shipping INTEGER, location TEXT, distance_km REAL, specs TEXT,"
+                    " last_checked TEXT, images TEXT)")
+        con.commit()
+        con.close()
+        self.run1()
+        self.assertEqual(self.q("select count(*) from listing where last_checked is not null")[0][0], 0)
+        self.assertEqual(self.q("select count(*) from listing where images like '[%'")[0][0], 8)
+
     def test_request_cap(self):
         cfg = self.cfg()
         Path(cfg).write_text(Path(cfg).read_text().replace("max_requests_per_run = 50", "max_requests_per_run = 1"))
