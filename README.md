@@ -43,6 +43,8 @@ uv run tracker run
 uv run tracker report    # bargains and thresholds per target
 ```
 
+`uv run tracker daily` does the whole pipeline (run, sellers, images, dashboard). After editing `targets.toml`, `uv run tracker reextract` recomputes specs for stored listings.
+
 One run a day is enough. Options:
 
 ```sh
