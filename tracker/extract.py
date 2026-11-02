@@ -65,6 +65,10 @@ def extract(target_cfg, title, description, detail=None, price=None):
     out["relevant"] = True if not rel else bool(
         any(re.search(r, t) for r in rel.get("include", [""])) and not any(re.search(r, t) for r in rel.get("exclude", [])))
 
+    floor = target_cfg.get("min_price_eur")  # covers/batteries/parts are cheap: anything below the floor is not the product
+    if floor is not None and price is not None and price < floor:
+        out["relevant"] = False
+
     out["compatible"] = None
     for verdict, ref in cfg.get("compatible", []):
         field, label = ref.split("=")

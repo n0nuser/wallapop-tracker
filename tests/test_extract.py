@@ -75,3 +75,11 @@ class Appliances(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PriceFloor(unittest.TestCase):
+    def test_min_price_eur_marks_cheap_listings_irrelevant(self):
+        cfg = {"min_price_eur": 80}
+        self.assertFalse(extract(cfg, "Pixel 9a", "", price=15)["relevant"])
+        self.assertTrue(extract(cfg, "Pixel 9a", "", price=80)["relevant"])
+        self.assertTrue(extract(cfg, "Pixel 9a", "")["relevant"])  # unknown price: keep
