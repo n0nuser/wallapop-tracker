@@ -187,8 +187,10 @@ th.sortable.asc::after{content:"▲";opacity:1}
 th.sortable.desc::after{content:"▼";opacity:1}
 tbody tr:nth-child(even){background:var(--surface-2)}
 tbody tr{transition:background-color 150ms var(--ease-out)}
+tbody tr.bargain,tbody tr.bargain:nth-child(even){background:color-mix(in oklch,var(--bargain) 35%,transparent)}
 td.num{text-align:end;font-variant-numeric:tabular-nums}
-.thumb{inline-size:64px;block-size:48px;aspect-ratio:4/3;object-fit:cover;border-radius:.45rem;background:var(--border);display:block}
+td[data-col=thumb]{inline-size:100px;padding-inline-end:0}
+.thumb{inline-size:88px;min-inline-size:88px;block-size:66px;aspect-ratio:4/3;object-fit:cover;border-radius:.45rem;background:var(--border);display:block}
 .seller{font-size:.9rem}.seller .muted{color:var(--muted)}
 .empty{text-align:center;padding:3rem 1rem;color:var(--muted)}
 .empty b{display:block;font-size:1.1rem;color:var(--fg);margin-block-end:.3rem}
@@ -196,6 +198,7 @@ td.num{text-align:end;font-variant-numeric:tabular-nums}
   a:hover{text-decoration:underline}
   tbody tr:hover{background:light-dark(oklch(.965 0 none),oklch(.25 0 none))}
 }
+@media (max-width:600px){[data-col=target],[data-col=condition],[data-col=compat],[data-col=history],[data-col=seen]{display:none}.thumb{inline-size:64px;min-inline-size:64px;block-size:48px}td[data-col=thumb]{inline-size:72px}}
 @media (prefers-reduced-motion:reduce){
   a{transition:none}a:active{transform:none}tbody tr{transition:none}.warn-tip::after{transition:none}
 }
@@ -238,6 +241,7 @@ td.num{text-align:end;font-variant-numeric:tabular-nums}
     <label>target<select id="target"><option value="">all</option>__TARGETS__</select></label>
     <label>text<input id="text" placeholder="title / brand / model"></label>
     <label>compat<select id="compat"><option value="">all</option><option value="ok">compatible</option><option value="no">not</option></select></label>
+    <label>price ≥<input id="pmin" type="number" min="0"></label>
     <label>price ≤<input id="pmax" type="number" min="0"></label>
     <label>€/unit ≤<input id="umax" type="number" min="0" step="0.1"></label>
     <label>min rating<input id="rmin" type="number" min="0" max="5" step="0.1" value="0"></label>
@@ -259,7 +263,7 @@ td.num{text-align:end;font-variant-numeric:tabular-nums}
 const DATA = __DATA__;
 const $ = id => document.getElementById(id);
 const state = () => ({target:$("target").value, text:$("text").value.trim().toLowerCase(),
-  compat:$("compat").value, pmax:$("pmax").value, umax:$("umax").value, rmin:$("rmin").value,
+  compat:$("compat").value, pmin:$("pmin").value, pmax:$("pmax").value, umax:$("umax").value, rmin:$("rmin").value,
   bargain:$("bargain").checked, relevant:$("relevant").checked, newtoday:$("newtoday").checked, dropped:$("dropped").checked});
 function matches(l,f){
   if(f.target && l.target!==f.target) return false;
@@ -267,6 +271,7 @@ function matches(l,f){
   if(f.text && !t.includes(f.text)) return false;
   if(f.compat==="ok" && l.compatible!==true) return false;
   if(f.compat==="no" && l.compatible!==false) return false;
+  if(f.pmin!=="" && (l.price==null || l.price<+f.pmin)) return false;
   if(f.pmax!=="" && (l.price==null || l.price>+f.pmax)) return false;
   if(f.umax!=="" && (l.metric==null || l.metric>+f.umax)) return false;
   if(f.rmin!=="" && (l.seller==null || l.seller.rating==null || l.seller.rating<+f.rmin)) return false;
@@ -287,6 +292,7 @@ function spark(hist){
   const last=ps[ps.length-1], c=last<ps[0]?"#1a9a4a":"#d13737";
   return `<svg width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.5"/><circle cx="${w}" cy="${h-p-((last-mn)/r)*(h-2*p)}" r="1.6" fill="${c}"/></svg>`;
 }
+const cost=l=>l.condition==="broken"||!(l.price>0)?Infinity:(l.metric??l.price);
 function risk(l){
   const s=l.seller;
   if(!s) return 1;
@@ -312,7 +318,7 @@ const cell=(c,h,cls="")=>`<td data-col="${c}" class="${[cls,hiddenCols.has(c)?"h
 function row(l){
   const img = l.thumb ? `<img class="thumb" src="${esc(l.thumb)}" loading="lazy">` : '';
   const metric = l.metric==null ? '' : l.metric.toFixed(1);
-  return `<tr>
+  return `<tr class="${l.bargain?'bargain':''}">
     ${cell("thumb", img)}
     <td><a href="${esc(l.url)}" target="_blank">${esc(l.title)}</a> ${tag(l.bargain?"bargain":"","bargain")}</td>
     ${cell("price", eur(l.price), "num")}
@@ -359,7 +365,7 @@ function render(){
     const k=sortKey;
     list=[...list].sort((a,b)=>{const va=val(a,k),vb=val(b,k);return va===vb?0:(va<vb?-1:1)*sortDir;});
   }else{
-    list=[...list].sort((a,b)=>{const ra=risk(a),rb=risk(b);if(ra!==rb)return ra-rb;return (a.price??Infinity)-(b.price??Infinity);});
+    list=[...list].sort((a,b)=>(b.bargain-a.bargain)||(risk(b)-risk(a))||(cost(a)-cost(b)));
   }
   $("rows").innerHTML=list.length?list.map(row).join(""):'<tr><td colspan="10"><div class="empty"><b>No listings match</b>Try clearing or loosening the filters.</div></td></tr>';
   $("count").textContent=`${list.length} of ${DATA.length} listings`;
@@ -370,6 +376,7 @@ function render(){
   });
 }
 const hiddenCols = new Set(JSON.parse(localStorage.getItem("wpt-cols")||"[]"));
+if(DATA.every(l=>l.compatible==null)){hiddenCols.add("compat");document.querySelector("th[data-col=compat]").classList.add("hidden");}
 document.querySelectorAll("[data-col]").forEach(cb=>{ if(cb.type==="checkbox") cb.checked=!hiddenCols.has(cb.dataset.col); });
 document.querySelectorAll(".cols-pop input[data-col]").forEach(cb=>cb.addEventListener("change",()=>{
   if(cb.checked) hiddenCols.delete(cb.dataset.col); else hiddenCols.add(cb.dataset.col);
