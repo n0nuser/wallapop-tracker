@@ -24,6 +24,12 @@ def main(argv=None):
     img.add_argument("--dir", default="images")
     img.add_argument("--max", type=int, default=0, help="cap the number of images downloaded (0 = all)")
 
+    rx = sub.add_parser("reextract", help="recompute specs for stored listings after editing targets.toml")
+    rx.add_argument("--db", default="tracker.db")
+    rx.add_argument("--targets", default="targets.toml")
+
+    sub.add_parser("daily", help="run, backfill sellers and images, rebuild dashboard.html")
+
     dash = sub.add_parser("dashboard", help="generate a self-contained dashboard.html")
     dash.add_argument("--db", default="tracker.db")
     dash.add_argument("--targets", default="targets.toml")
@@ -39,6 +45,14 @@ def main(argv=None):
         return 0 if collector.backfill_sellers(a.db, a.targets, max_checks=a.max) >= 0 else 1
     if a.cmd == "images":
         return 0 if collector.download_images(a.db, a.dir, max_images=a.max) >= 0 else 1
+    if a.cmd == "daily":
+        for step in (["run"], ["sellers"], ["images"], ["dashboard"]):
+            if main(step):
+                return 1
+        return 0
+    if a.cmd == "reextract":
+        print(f"re-extracted {collector.reextract(a.db, a.targets)} listings")
+        return 0
     if a.cmd == "dashboard":
         n = dashboard.generate(a.db, a.targets, a.out, a.images_dir)
         print(f"wrote {a.out} ({n} listings)")

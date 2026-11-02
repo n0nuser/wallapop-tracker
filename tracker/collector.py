@@ -372,6 +372,24 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
     return 2 if isinstance(stop, Blocked) else 1 if stop else 0
 
 
+def reextract(db="tracker.db", targets="targets.toml"):
+    """Recompute specs for every stored listing from its title/description, so edits to
+    targets.toml apply retroactively. Keeps a previously known condition (it may have come
+    from the item detail endpoint, which is not re-fetched)."""
+    cfg = tomllib.loads(Path(targets).read_text())
+    con = sqlite3.connect(db)
+    n = 0
+    with con:
+        for id, tname, title, desc, price, old in con.execute(
+                "SELECT id, target, title, description, price_eur, specs FROM listing").fetchall():
+            new = extract(cfg["targets"].get(tname) or {}, title, desc, price=price)
+            new["condition"] = new["condition"] or json.loads(old or "{}").get("condition")
+            con.execute("UPDATE listing SET specs=? WHERE id=?", (json.dumps(new, ensure_ascii=False), id))
+            n += 1
+    con.close()
+    return n
+
+
 def backfill_sellers(db="tracker.db", targets="targets.toml", max_checks=0):
     """Fetch `wallapop user show` for every listing's seller not yet stored (raises coverage).
     Returns the number of sellers fetched, or -1 on a block."""

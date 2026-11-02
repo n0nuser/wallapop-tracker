@@ -329,5 +329,22 @@ class CliFetcher(unittest.TestCase):
         self.assertIsNone(self.cli(rc=4).user("ghost"))  # exit 4 (no such user) -> None, not an exception
 
 
+
+class ReextractTest(unittest.TestCase):
+    def test_config_edit_applies_retroactively_and_keeps_known_condition(self):
+        d = Path(tempfile.mkdtemp())
+        cfg = d / "t.toml"
+        cfg.write_text('[targets.x]\n[targets.x.extract]\nrelevant = { include = ["disco"] }\n')
+        db = d / "t.db"
+        con = sqlite3.connect(db)
+        con.execute("CREATE TABLE listing (id, target, title, description, price_eur, specs)")
+        con.execute("INSERT INTO listing VALUES ('1','x','Docking disco','',20,?)", ('{"condition":"new"}',))
+        con.commit(); con.close()
+        collector.reextract(str(db), str(cfg))
+        cfg.write_text('[targets.x]\n[targets.x.extract]\nrelevant = { include = ["disco"], exclude = ["docking"] }\n')
+        collector.reextract(str(db), str(cfg))
+        specs = json.loads(sqlite3.connect(db).execute("SELECT specs FROM listing").fetchone()[0])
+        self.assertEqual((specs["relevant"], specs["condition"]), (False, "new"))
+
 if __name__ == "__main__":
     unittest.main()
