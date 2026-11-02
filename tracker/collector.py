@@ -228,7 +228,8 @@ def run(db="tracker.db", targets="targets.toml", replay=None, fetch=None, now=No
                                (r["id"],)).fetchone()
             loc = r["city"] or ""
             if prev is None:
-                con.execute("INSERT INTO listing VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)",
+                con.execute("INSERT INTO listing(id,target,title,description,url,first_seen,last_seen,created_at,price_eur,"
+                            "status,seller_id,shipping,location,distance_km,specs,images) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                             (r["id"], tname, r["title"], r["description"], r["url"], now, now, r["created_at"], r["price"],
                              r["status"], r["seller_id"], int(r["shipping"]), loc, r["distance_km"],
                              specs_json(tname, r["title"], r["description"], r["price"]), json.dumps(r["images"])))
